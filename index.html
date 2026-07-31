@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EU Exhibition Registration</title>
+<style>
+  :root{
+    --eu-blue:#003399;
+    --eu-blue-deep:#00246B;
+    --eu-yellow:#FFCC00;
+    --paper:#FFFFFF;
+    --ink:#0B1730;
+    --ink-soft:#5B6B85;
+    --line:#D9E0EE;
+    --panel:#F4F6FC;
+    --danger:#C6373A;
+    --ok:#1F8A5C;
+    --font-display:'Georgia', 'Times New Roman', serif;
+    --font-body:'Arial', 'Helvetica Neue', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;background:var(--panel);color:var(--ink);font-family:var(--font-body);
+  }
+  .banner{
+    background:var(--eu-blue);color:#fff;padding:28px 20px 34px;position:relative;overflow:hidden;
+  }
+  .stars{
+    position:relative;width:64px;height:64px;margin:0 auto 14px;
+  }
+  .stars i{
+    position:absolute;width:8px;height:8px;left:28px;top:28px;
+    background:var(--eu-yellow);
+    clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);
+    transform-origin:4px 4px;
+  }
+  .banner-inner{max-width:900px;margin:0 auto;text-align:center;position:relative;z-index:1;}
+  .eyebrow{
+    font-family:var(--font-body);font-size:11px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--eu-yellow);margin:0 0 8px;font-weight:700;
+  }
+  h1{font-family:var(--font-display);font-size:28px;margin:0 0 8px;font-weight:700;}
+  .sub{font-size:14px;color:#DCE6FF;max-width:620px;margin:0 auto;line-height:1.55;}
+
+  .wrap{max-width:960px;margin:0 auto;padding:26px 18px 70px;}
+
+  .steps{display:flex;gap:8px;justify-content:center;margin-bottom:26px;flex-wrap:wrap;}
+  .step{
+    font-family:var(--font-body);font-size:12px;font-weight:700;letter-spacing:.04em;
+    color:var(--ink-soft);padding:7px 14px;border-radius:20px;border:1.5px solid var(--line);
+    background:#fff;
+  }
+  .step.active{background:var(--eu-blue);color:#fff;border-color:var(--eu-blue);}
+  .step.done{background:var(--eu-yellow);color:var(--eu-blue-deep);border-color:var(--eu-yellow);}
+
+  .card{
+    background:#fff;border:1px solid var(--line);border-radius:6px;padding:22px;margin-bottom:20px;
+    box-shadow:0 1px 2px rgba(11,23,48,.04);
+  }
+  .card h2{
+    font-family:var(--font-display);font-size:18px;margin:0 0 4px;color:var(--eu-blue-deep);
+  }
+  .card .desc{font-size:13px;color:var(--ink-soft);margin:0 0 18px;}
+
+  .status-line{
+    display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--ink-soft);margin-bottom:14px;
+  }
+  .status-line strong{color:var(--eu-blue-deep);}
+
+  .venue{
+    position:relative;width:100%;aspect-ratio:2570/1130;background:var(--panel);
+    border:1px solid var(--line);border-radius:6px;margin-bottom:6px;min-height:220px;
+  }
+  .venue-label{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;
+    font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);
+    pointer-events:none;
+  }
+  .cluster{
+    position:absolute;display:grid;gap:5px;
+  }
+  .booth{
+    border:1.5px solid var(--eu-blue);border-radius:4px;background:#fff;
+    cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;padding:6px 5px;
+    position:relative;transition:all .12s ease;min-width:0;overflow:hidden;
+  }
+  .booth:hover:not(.taken){background:var(--eu-blue);color:#fff;transform:translateY(-2px);}
+  .booth:hover:not(.taken) .booth-hint{color:var(--eu-yellow);}
+  .booth-no{font-size:11px;font-weight:700;}
+  .booth-hint{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);}
+  .booth.taken{
+    cursor:default;background:var(--panel);border-color:var(--line);
+  }
+  .booth.selected{background:var(--eu-yellow);border-color:var(--eu-yellow);color:var(--eu-blue-deep);}
+  .booth-country{
+    font-size:9px;font-weight:700;color:var(--eu-blue-deep);word-break:break-word;line-height:1.2;
+    text-align:center;
+  }
+  .release{
+    position:absolute;bottom:4px;right:5px;font-size:8px;color:var(--ink-soft);background:none;
+    border:none;cursor:pointer;text-decoration:underline;padding:0;
+  }
+
+  @media (max-width:700px){
+    .venue{
+      aspect-ratio:auto;display:flex;flex-direction:column;gap:10px;padding:12px;min-height:0;
+    }
+    .venue-label{display:none;}
+    .cluster{
+      position:static;width:100% !important;height:auto !important;
+    }
+    .booth{aspect-ratio:1/1;}
+  }
+
+  .slots-day{margin-bottom:22px;}
+  .slots-day h3{
+    font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--eu-blue-deep);
+    border-bottom:2px solid var(--eu-yellow);padding-bottom:6px;margin:0 0 10px;
+  }
+  .slot-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;}
+  @media (max-width:700px){.slot-grid{grid-template-columns:repeat(2,1fr);}}
+  .slot{
+    border:1.5px solid var(--eu-blue);border-radius:4px;padding:9px 8px;cursor:pointer;background:#fff;
+    font-size:12px;transition:all .12s ease;
+  }
+  .slot:hover:not(.taken):not(.fixed){background:var(--eu-blue);color:#fff;}
+  .slot .time{font-weight:700;display:block;margin-bottom:3px;}
+  .slot .topic{font-size:11px;color:var(--ink-soft);display:block;}
+  .slot:hover:not(.taken):not(.fixed) .topic{color:#DCE6FF;}
+  .slot.fixed{background:var(--panel);border-color:var(--line);cursor:default;color:var(--ink-soft);}
+  .slot.taken{background:var(--panel);border-color:var(--line);cursor:default;}
+  .slot.selected{background:var(--eu-yellow);border-color:var(--eu-yellow);color:var(--eu-blue-deep);}
+  .slot.selected .topic{color:var(--eu-blue-deep);}
+
+  label{display:block;font-size:12px;color:var(--ink-soft);margin:12px 0 4px;font-weight:700;}
+  label:first-of-type{margin-top:0;}
+  input{
+    width:100%;padding:10px 11px;border:1.5px solid var(--line);border-radius:4px;font-size:14px;
+    font-family:var(--font-body);color:var(--ink);
+  }
+  input:focus{outline:2px solid var(--eu-blue);outline-offset:1px;border-color:var(--eu-blue);}
+  button.primary{
+    margin-top:16px;width:100%;padding:12px;background:var(--eu-yellow);color:var(--eu-blue-deep);
+    border:none;border-radius:4px;font-weight:700;font-size:13px;letter-spacing:.03em;
+    text-transform:uppercase;cursor:pointer;font-family:var(--font-body);
+  }
+  button.primary:disabled{opacity:.4;cursor:not-allowed;}
+  button.primary:hover:not(:disabled){filter:brightness(0.97);}
+  button.secondary{
+    margin-top:10px;width:100%;padding:10px;background:#fff;color:var(--eu-blue);
+    border:1.5px solid var(--eu-blue);border-radius:4px;font-weight:700;font-size:12px;
+    text-transform:uppercase;letter-spacing:.03em;cursor:pointer;font-family:var(--font-body);
+  }
+  .msg{font-size:12px;margin-top:10px;min-height:16px;}
+  .msg.err{color:var(--danger);}
+  .msg.ok{color:var(--ok);}
+
+  .summary{
+    background:var(--eu-blue);color:#fff;border-radius:6px;padding:22px;text-align:center;
+  }
+  .summary h2{font-family:var(--font-display);margin:0 0 10px;color:#fff;}
+  .summary .line{font-size:14px;margin:6px 0;color:#DCE6FF;}
+  .summary .line strong{color:var(--eu-yellow);}
+
+  .loading{color:var(--ink-soft);font-size:13px;padding:30px 0;text-align:center;}
+  .config-warning{
+    background:#FFF6D9;border:1px solid var(--eu-yellow);color:#6B5400;font-size:12px;
+    padding:10px 14px;border-radius:4px;margin-bottom:18px;
+  }
+</style>
+</head>
+<body>
+  <div class="banner">
+    <div class="banner-inner">
+      <div class="stars" aria-hidden="true"></div>
+      <p class="eyebrow">EU Delegation · Exhibition</p>
+      <h1>Booth &amp; Seminar Registration</h1>
+      <p class="sub">First come, first served. Claim your country's exhibition booth, then reserve a seminar slot across the two-day programme.</p>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div id="configWarning" class="config-warning" style="display:none;">
+      This page isn't connected to a Google Sheet yet — set <code>API_URL</code> at the top of the script to your Apps Script Web App URL.
+    </div>
+
+    <div class="steps">
+      <div class="step" id="step1">1 · Booth</div>
+      <div class="step" id="step2">2 · Seminar slot</div>
+      <div class="step" id="step3">3 · Confirmation</div>
+    </div>
+
+    <div id="loading" class="loading">Loading current registrations…</div>
+
+    <!-- STEP 1: BOOTH -->
+    <div id="boothCard" class="card" style="display:none;">
+      <h2>Step 1 · Choose your booth</h2>
+      <p class="desc">22 booths, arranged across the exhibition floor as shown below.</p>
+      <div class="status-line"><span><strong id="availBooths">–</strong> of 22 open</span></div>
+      <div class="venue" id="venue"><div class="venue-label">Exhibition floor</div></div>
+      <label for="countryBooth">Country</label>
+      <input id="countryBooth" placeholder="e.g. Belgium" maxlength="60">
+      <label for="contactBooth">Contact name / email (optional)</label>
+      <input id="contactBooth" placeholder="delegation contact" maxlength="80">
+      <button class="primary" id="claimBoothBtn" disabled>Select a booth first</button>
+      <div id="boothMsg" class="msg"></div>
+    </div>
+
+    <!-- STEP 2: SEMINAR -->
+    <div id="seminarCard" class="card" style="display:none;">
+      <h2>Step 2 · Choose a seminar slot</h2>
+      <p class="desc" id="seminarCountryLine"></p>
+      <div id="seminarDays"></div>
+      <button class="primary" id="claimSeminarBtn" disabled>Select a slot first</button>
+      <button class="secondary" id="skipSeminarBtn">Skip seminar slot for now</button>
+      <div id="seminarMsg" class="msg"></div>
+    </div>
+
+    <!-- STEP 3: SUMMARY -->
+    <div id="summaryCard" class="card summary" style="display:none;">
+      <h2 id="summaryTitle">You're registered</h2>
+      <div class="line" id="summaryBooth"></div>
+      <div class="line" id="summarySeminar"></div>
+      <button class="secondary" id="registerAnotherBtn" style="background:transparent;color:#fff;border-color:#fff;margin-top:16px;">Register another country</button>
+    </div>
+  </div>
+
+<script>
+// ---- CONFIGURE THIS ----
+const API_URL = 'https://script.google.com/macros/s/AKfycbzHHSVQv1XSmUdtzP9tz3LuOgdUMGPJz6eFG2d8vByn2UKScoGB27ZcUrO47DFteOaI/exec';
+// -------------------------
+
+let data = { booths: [], seminars: [] };
+let selectedBooth = null;
+let selectedSeminarRow = null;
+let currentCountry = '';
+let currentContact = '';
+
+async function apiGet(){
+  const res = await fetch(API_URL + '?action=state&t=' + Date.now());
+  return res.json();
+}
+async function apiPost(payload){
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids CORS preflight on Apps Script
+    body: JSON.stringify(payload)
+  });
+  return res.json();
+}
+
+function escapeHtml(s){
+  const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML;
+}
+
+async function loadState(){
+  data = await apiGet();
+}
+
+function setStep(n){
+  ['step1','step2','step3'].forEach((id, i) => {
+    const el = document.getElementById(id);
+    el.classList.remove('active','done');
+    if (i + 1 < n) el.classList.add('done');
+    if (i + 1 === n) el.classList.add('active');
+  });
+}
+
+function showCard(id){
+  ['boothCard','seminarCard','summaryCard'].forEach(c => {
+    document.getElementById(c).style.display = (c === id) ? 'block' : 'none';
+  });
+}
+
+// Matches the real floor plan: 3 pairs across the top, 4 clusters of 2x2 across
+// the bottom, with the open exhibition floor in between. Numbered left to
+// right, top area first, then bottom area, reading each 2x2 cluster
+// top-left -> top-right -> bottom-left -> bottom-right.
+const CLUSTERS = [
+  { top:'0%',   height:'20%', left:'19.8%', width:'14.6%', cols:2, rows:1, booths:[1,2] },
+  { top:'0%',   height:'20%', left:'42.4%', width:'14.8%', cols:2, rows:1, booths:[3,4] },
+  { top:'0%',   height:'20%', left:'65.8%', width:'14.8%', cols:2, rows:1, booths:[5,6] },
+  { top:'76%',  height:'24%', left:'0%',    width:'15%',   cols:2, rows:2, booths:[7,8,9,10] },
+  { top:'76%',  height:'24%', left:'29.2%', width:'15%',   cols:2, rows:2, booths:[11,12,13,14] },
+  { top:'76%',  height:'24%', left:'60.7%', width:'15.2%', cols:2, rows:2, booths:[15,16,17,18] },
+  { top:'76%',  height:'24%', left:'85%',   width:'15%',   cols:2, rows:2, booths:[19,20,21,22] },
+];
+
+function renderBooths(){
+  const venue = document.getElementById('venue');
+  venue.innerHTML = '<div class="venue-label">Exhibition floor</div>';
+
+  CLUSTERS.forEach(cluster => {
+    const wrap = document.createElement('div');
+    wrap.className = 'cluster';
+    wrap.style.top = cluster.top;
+    wrap.style.height = cluster.height;
+    wrap.style.left = cluster.left;
+    wrap.style.width = cluster.width;
+    wrap.style.gridTemplateColumns = `repeat(${cluster.cols}, 1fr)`;
+    wrap.style.gridTemplateRows = `repeat(${cluster.rows}, 1fr)`;
+    cluster.booths.forEach(num => {
+      const b = data.booths.find(x => x.Number == num) || { Number: num, Status: 'available' };
+      wrap.appendChild(boothEl(b));
+    });
+    venue.appendChild(wrap);
+  });
+
+  document.getElementById('availBooths').textContent = data.booths.filter(b => b.Status === 'available').length;
+}
+
+function boothEl(b){
+  const el = document.createElement('div');
+  const taken = b.Status === 'taken';
+  el.className = 'booth' + (taken ? ' taken' : '') + (selectedBooth === b.Number ? ' selected' : '');
+  el.innerHTML = `<div class="booth-no">${String(b.Number).padStart(2,'0')}</div>`;
+  if (taken){
+    el.innerHTML += `<div class="booth-country">${escapeHtml(b.Country)}</div>`;
+    const rel = document.createElement('button');
+    rel.className = 'release'; rel.textContent = 'release';
+    rel.onclick = (e) => { e.stopPropagation(); releaseBooth(b.Number); };
+    el.appendChild(rel);
+  } else {
+    el.innerHTML += `<div class="booth-hint">Open</div>`;
+    el.onclick = () => { selectedBooth = b.Number; renderBooths(); updateBoothBtn(); };
+  }
+  return el;
+}
+
+function updateBoothBtn(){
+  const btn = document.getElementById('claimBoothBtn');
+  if (selectedBooth == null){ btn.disabled = true; btn.textContent = 'Select a booth first'; return; }
+  btn.disabled = false;
+  btn.textContent = `Claim Booth ${String(selectedBooth).padStart(2,'0')}`;
+}
+
+async function releaseBooth(number){
+  const booth = data.booths.find(b => b.Number == number);
+  const name = prompt(`Release Booth ${String(number).padStart(2,'0')} (currently ${booth.Country})?\nType the country name to confirm:`);
+  if (name === null) return;
+  const result = await apiPost({ action:'releaseBooth', number, country: name });
+  if (!result.ok){ alert(result.error); return; }
+  await loadState(); renderBooths();
+}
+
+async function claimBooth(){
+  const country = document.getElementById('countryBooth').value.trim();
+  const contact = document.getElementById('contactBooth').value.trim();
+  const msg = document.getElementById('boothMsg');
+  msg.className = 'msg';
+  if (!country){ msg.className = 'msg err'; msg.textContent = 'Enter a country name first.'; return; }
+  if (selectedBooth == null) return;
+
+  const btn = document.getElementById('claimBoothBtn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+
+  const result = await apiPost({ action:'claimBooth', number: selectedBooth, country, contact });
+  await loadState();
+
+  if (!result.ok){
+    msg.className = 'msg err'; msg.textContent = result.error;
+    selectedBooth = null; renderBooths(); updateBoothBtn();
+    return;
+  }
+
+  currentCountry = country; currentContact = contact;
+  msg.className = 'msg ok'; msg.textContent = `Booth confirmed for ${country}.`;
+  goToSeminarStep();
+}
+
+function goToSeminarStep(){
+  setStep(2); showCard('seminarCard');
+  document.getElementById('seminarCountryLine').textContent = `Registering seminar slot for ${currentCountry}.`;
+  renderSeminars();
+}
+
+function renderSeminars(){
+  const container = document.getElementById('seminarDays');
+  container.innerHTML = '';
+  const days = [...new Set(data.seminars.map(s => s.Day))];
+  days.forEach(day => {
+    const wrap = document.createElement('div');
+    wrap.className = 'slots-day';
+    wrap.innerHTML = `<h3>${escapeHtml(day)}</h3>`;
+    const grid = document.createElement('div');
+    grid.className = 'slot-grid';
+    data.seminars.filter(s => s.Day === day).forEach(s => grid.appendChild(slotEl(s)));
+    wrap.appendChild(grid);
+    container.appendChild(wrap);
+  });
+}
+
+function slotEl(s){
+  const el = document.createElement('div');
+  const state = s.Status; // available | taken | fixed
+  el.className = 'slot ' + state + (selectedSeminarRow === s.Row ? ' selected' : '');
+  const topicLine = state === 'available'
+    ? 'Open slot'
+    : (s.Topic ? `${escapeHtml(s.Topic)} — ${escapeHtml(s.Country)}` : escapeHtml(s.Country));
+  el.innerHTML = `<span class="time">${escapeHtml(s.Time)}</span><span class="topic">${topicLine}</span>`;
+  if (state === 'available'){
+    el.onclick = () => { selectedSeminarRow = s.Row; renderSeminars(); updateSeminarBtn(); };
+  }
+  return el;
+}
+
+function updateSeminarBtn(){
+  const btn = document.getElementById('claimSeminarBtn');
+  if (selectedSeminarRow == null){ btn.disabled = true; btn.textContent = 'Select a slot first'; return; }
+  const s = data.seminars.find(x => x.Row === selectedSeminarRow);
+  btn.disabled = false;
+  btn.textContent = `Reserve ${s.Time}`;
+}
+
+async function claimSeminar(){
+  const msg = document.getElementById('seminarMsg');
+  msg.className = 'msg';
+  if (selectedSeminarRow == null) return;
+  const btn = document.getElementById('claimSeminarBtn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+
+  const result = await apiPost({ action:'claimSeminar', row: selectedSeminarRow, country: currentCountry, contact: currentContact });
+  await loadState();
+
+  if (!result.ok){
+    msg.className = 'msg err'; msg.textContent = result.error;
+    selectedSeminarRow = null; renderSeminars(); updateSeminarBtn();
+    return;
+  }
+
+  const s = data.seminars.find(x => x.Row === selectedSeminarRow);
+  showSummary(s);
+}
+
+function showSummary(seminar){
+  setStep(3); showCard('summaryCard');
+  const b = data.booths.find(x => x.Country === currentCountry && x.Status === 'taken');
+  document.getElementById('summaryBooth').innerHTML = b
+    ? `Booth: <strong>${String(b.Number).padStart(2,'0')}</strong>`
+    : '';
+  document.getElementById('summarySeminar').innerHTML = seminar
+    ? `Seminar slot: <strong>${escapeHtml(seminar.Day)}, ${escapeHtml(seminar.Time)}</strong>`
+    : 'No seminar slot reserved.';
+}
+
+function resetFlow(){
+  selectedBooth = null; selectedSeminarRow = null; currentCountry = ''; currentContact = '';
+  document.getElementById('countryBooth').value = '';
+  document.getElementById('contactBooth').value = '';
+  document.getElementById('boothMsg').textContent = '';
+  document.getElementById('seminarMsg').textContent = '';
+  setStep(1); showCard('boothCard');
+  renderBooths(); updateBoothBtn();
+}
+
+document.getElementById('claimBoothBtn').addEventListener('click', claimBooth);
+document.getElementById('claimSeminarBtn').addEventListener('click', claimSeminar);
+document.getElementById('skipSeminarBtn').addEventListener('click', () => showSummary(null));
+document.getElementById('registerAnotherBtn').addEventListener('click', resetFlow);
+
+(async function init(){
+  if (!API_URL || API_URL.indexOf('PASTE_YOUR') === 0){
+    document.getElementById('configWarning').style.display = 'block';
+  }
+  document.getElementById('loading').style.display = 'block';
+  try {
+    await loadState();
+  } catch(e){
+    document.getElementById('loading').textContent = 'Could not reach the registration sheet. Check the API_URL setting.';
+    return;
+  }
+  document.getElementById('loading').style.display = 'none';
+  setStep(1); showCard('boothCard');
+  renderBooths(); updateBoothBtn();
+
+  setInterval(async () => {
+    try {
+      await loadState();
+      if (document.getElementById('boothCard').style.display !== 'none') renderBooths();
+      if (document.getElementById('seminarCard').style.display !== 'none') renderSeminars();
+    } catch(e){}
+  }, 5000);
+})();
+</script>
+</body>
+</html>

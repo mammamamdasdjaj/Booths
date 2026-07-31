@@ -101,6 +101,20 @@
     position:absolute;bottom:4px;right:5px;font-size:8px;color:var(--ink-soft);background:none;
     border:none;cursor:pointer;text-decoration:underline;padding:0;
   }
+  .change-btn{
+    position:absolute;bottom:4px;left:5px;font-size:8px;color:var(--eu-blue);background:none;
+    border:none;cursor:pointer;text-decoration:underline;padding:0;font-weight:700;
+  }
+  .booth.pending-move{outline:2px dashed var(--eu-blue);outline-offset:2px;}
+  .change-banner{
+    background:#EAF0FF;border:1px solid var(--eu-blue);color:var(--eu-blue-deep);font-size:12px;
+    padding:8px 12px;border-radius:4px;margin-bottom:10px;display:flex;justify-content:space-between;
+    align-items:center;gap:10px;
+  }
+  .change-banner button{
+    background:none;border:none;color:var(--eu-blue-deep);text-decoration:underline;cursor:pointer;
+    font-size:12px;font-family:var(--font-body);padding:0;
+  }
 
   @media (max-width:700px){
     .venue{
@@ -175,8 +189,8 @@
     <div class="banner-inner">
       <div class="stars" aria-hidden="true"></div>
       <p class="eyebrow">EU Delegation · Exhibition</p>
-      <h1>Booth &amp; Seminar Registration</h1>
-      <p class="sub">First come, first served. Claim your country's exhibition booth, then reserve a seminar slot across the two-day programme.</p>
+      <h1>Booth &amp; Seminar Registration for the  International Education Fair 19-20th September</h1>
+      <p class="sub">The registration is on the first come, first served basis. Please reserve your booth by selecting and then confirming your choice, countries that have signalled desire to have 2 booths, please select two.</p>
     </div>
   </div>
 
@@ -198,11 +212,15 @@
       <h2>Step 1 · Choose your booth</h2>
       <p class="desc">22 booths, arranged across the exhibition floor as shown below.</p>
       <div class="status-line"><span><strong id="availBooths">–</strong> of 22 open</span></div>
+      <div id="changeBanner" class="change-banner" style="display:none;">
+        <span id="changeBannerText"></span>
+        <button id="cancelChangeBtn">Cancel</button>
+      </div>
       <div class="venue" id="venue"><div class="venue-label">Exhibition floor</div></div>
       <label for="countryBooth">Country</label>
       <input id="countryBooth" placeholder="e.g. Belgium" maxlength="60">
-      <label for="contactBooth">Contact name / email (optional)</label>
-      <input id="contactBooth" placeholder="delegation contact" maxlength="80">
+      <label for="contactBooth">Email (required)</label>
+      <input id="contactBooth" type="email" placeholder="delegation@example.gov" maxlength="80">
       <button class="primary" id="claimBoothBtn" disabled>Select a booth first</button>
       <div id="boothMsg" class="msg"></div>
     </div>
@@ -228,7 +246,7 @@
 
 <script>
 // ---- CONFIGURE THIS ----
-const API_URL = 'https://script.google.com/macros/s/AKfycbzHHSVQv1XSmUdtzP9tz3LuOgdUMGPJz6eFG2d8vByn2UKScoGB27ZcUrO47DFteOaI/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbz3wYaUmVJEoYg0VG9xukkVf86C3-Lk6Pr4H_aYiA2yqD00mQtoJLF1rV6Jzg0v_zDU/exec';
 // -------------------------
 
 let data = { booths: [], seminars: [] };
@@ -236,6 +254,11 @@ let selectedBooth = null;
 let selectedSeminarRow = null;
 let currentCountry = '';
 let currentContact = '';
+let pendingChange = null; // { oldNumber, country, email } while a "change booth" move is in progress
+
+function isValidEmail(v){
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+}
 
 async function apiGet(){
   const res = await fetch(API_URL + '?action=state&t=' + Date.now());
@@ -313,17 +336,34 @@ function renderBooths(){
 function boothEl(b){
   const el = document.createElement('div');
   const taken = b.Status === 'taken';
-  el.className = 'booth' + (taken ? ' taken' : '') + (selectedBooth === b.Number ? ' selected' : '');
+  const isPendingSource = pendingChange && pendingChange.oldNumber === b.Number;
+  el.className = 'booth'
+    + (taken ? ' taken' : '')
+    + (selectedBooth === b.Number ? ' selected' : '')
+    + (isPendingSource ? ' pending-move' : '');
   el.innerHTML = `<div class="booth-no">${String(b.Number).padStart(2,'0')}</div>`;
   if (taken){
     el.innerHTML += `<div class="booth-country">${escapeHtml(b.Country)}</div>`;
-    const rel = document.createElement('button');
-    rel.className = 'release'; rel.textContent = 'release';
-    rel.onclick = (e) => { e.stopPropagation(); releaseBooth(b.Number); };
-    el.appendChild(rel);
+    if (!pendingChange){
+      const chg = document.createElement('button');
+      chg.className = 'change-btn'; chg.textContent = 'change';
+      chg.onclick = (e) => { e.stopPropagation(); requestChange(b); };
+      el.appendChild(chg);
+
+      const rel = document.createElement('button');
+      rel.className = 'release'; rel.textContent = 'release';
+      rel.onclick = (e) => { e.stopPropagation(); releaseBooth(b.Number); };
+      el.appendChild(rel);
+    }
   } else {
     el.innerHTML += `<div class="booth-hint">Open</div>`;
-    el.onclick = () => { selectedBooth = b.Number; renderBooths(); updateBoothBtn(); };
+    el.onclick = () => {
+      if (pendingChange){
+        doChangeBooth(b.Number);
+      } else {
+        selectedBooth = b.Number; renderBooths(); updateBoothBtn();
+      }
+    };
   }
   return el;
 }
@@ -337,12 +377,52 @@ function updateBoothBtn(){
 
 async function releaseBooth(number){
   const booth = data.booths.find(b => b.Number == number);
-  const name = prompt(`Release Booth ${String(number).padStart(2,'0')} (currently ${booth.Country})?\nType the country name to confirm:`);
-  if (name === null) return;
-  const result = await apiPost({ action:'releaseBooth', number, country: name });
+  const email = prompt(`Release Booth ${String(number).padStart(2,'0')} (registered to ${booth.Country})?\nEnter the email used at registration to confirm:`);
+  if (email === null) return;
+  const result = await apiPost({ action:'releaseBooth', number, email });
   if (!result.ok){ alert(result.error); return; }
   await loadState(); renderBooths();
 }
+
+function requestChange(booth){
+  const email = prompt(`To move ${booth.Country}'s booth, enter the email used at registration:`);
+  if (email === null) return;
+  pendingChange = { oldNumber: booth.Number, country: booth.Country, email };
+  showChangeBanner();
+  renderBooths();
+}
+
+function showChangeBanner(){
+  const banner = document.getElementById('changeBanner');
+  const text = document.getElementById('changeBannerText');
+  if (pendingChange){
+    banner.style.display = 'flex';
+    text.textContent = `Moving ${pendingChange.country}'s booth — click an open booth below to move it there.`;
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+async function doChangeBooth(newNumber){
+  const { oldNumber, country, email } = pendingChange;
+  const result = await apiPost({ action:'changeBooth', oldNumber, newNumber, country, email });
+  await loadState();
+  if (!result.ok){
+    alert(result.error);
+    pendingChange = null;
+    showChangeBanner(); renderBooths();
+    return;
+  }
+  pendingChange = null;
+  showChangeBanner();
+  renderBooths();
+}
+
+document.getElementById('cancelChangeBtn').addEventListener('click', () => {
+  pendingChange = null;
+  showChangeBanner();
+  renderBooths();
+});
 
 async function claimBooth(){
   const country = document.getElementById('countryBooth').value.trim();
@@ -350,6 +430,8 @@ async function claimBooth(){
   const msg = document.getElementById('boothMsg');
   msg.className = 'msg';
   if (!country){ msg.className = 'msg err'; msg.textContent = 'Enter a country name first.'; return; }
+  if (!contact){ msg.className = 'msg err'; msg.textContent = 'Enter an email address to register.'; return; }
+  if (!isValidEmail(contact)){ msg.className = 'msg err'; msg.textContent = 'Enter a valid email address.'; return; }
   if (selectedBooth == null) return;
 
   const btn = document.getElementById('claimBoothBtn');

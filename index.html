@@ -189,8 +189,8 @@
     <div class="banner-inner">
       <div class="stars" aria-hidden="true"></div>
       <p class="eyebrow">EU Delegation · Exhibition</p>
-      <h1>Booth &amp; Seminar Registration for the  International Education Fair 19-20th September</h1>
-      <p class="sub">The registration is on the first come, first served basis. Please reserve your booth by selecting and then confirming your choice, countries that have signalled desire to have 2 booths, please select two.</p>
+      <h1>Booth &amp; Seminar Registration</h1>
+      <p class="sub">First come, first served. Claim your country's exhibition booth, then reserve a seminar slot across the two-day programme.</p>
     </div>
   </div>
 
@@ -200,34 +200,43 @@
     </div>
 
     <div class="steps">
-      <div class="step" id="step1">1 · Booth</div>
-      <div class="step" id="step2">2 · Seminar slot</div>
-      <div class="step" id="step3">3 · Confirmation</div>
+      <div class="step" id="step0">1 · Your details</div>
+      <div class="step" id="step1">2 · Booth</div>
+      <div class="step" id="step2">3 · Seminar slot</div>
+      <div class="step" id="step3">4 · Confirmation</div>
     </div>
 
     <div id="loading" class="loading">Loading current registrations…</div>
 
+    <!-- STEP 0: DETAILS -->
+    <div id="detailsCard" class="card" style="display:none;">
+      <h2>Step 1 · Your details</h2>
+      <p class="desc">Enter your country and email to unlock the booth map.</p>
+      <label for="countryDetails">Country</label>
+      <input id="countryDetails" placeholder="e.g. Belgium" maxlength="60">
+      <label for="contactDetails">Email (required)</label>
+      <input id="contactDetails" type="email" placeholder="delegation@example.gov" maxlength="80">
+      <button class="primary" id="continueDetailsBtn">Continue to booth selection</button>
+      <div id="detailsMsg" class="msg"></div>
+    </div>
+
     <!-- STEP 1: BOOTH -->
     <div id="boothCard" class="card" style="display:none;">
-      <h2>Step 1 · Choose your booth</h2>
-      <p class="desc">22 booths, arranged across the exhibition floor as shown below.</p>
+      <h2>Step 2 · Choose your booth</h2>
+      <p class="desc" id="boothCountryLine">22 booths, arranged across the exhibition floor as shown below.</p>
       <div class="status-line"><span><strong id="availBooths">–</strong> of 22 open</span></div>
       <div id="changeBanner" class="change-banner" style="display:none;">
         <span id="changeBannerText"></span>
         <button id="cancelChangeBtn">Cancel</button>
       </div>
       <div class="venue" id="venue"><div class="venue-label">Exhibition floor</div></div>
-      <label for="countryBooth">Country</label>
-      <input id="countryBooth" placeholder="e.g. Belgium" maxlength="60">
-      <label for="contactBooth">Email (required)</label>
-      <input id="contactBooth" type="email" placeholder="delegation@example.gov" maxlength="80">
       <button class="primary" id="claimBoothBtn" disabled>Select a booth first</button>
       <div id="boothMsg" class="msg"></div>
     </div>
 
     <!-- STEP 2: SEMINAR -->
     <div id="seminarCard" class="card" style="display:none;">
-      <h2>Step 2 · Choose a seminar slot</h2>
+      <h2>Step 3 · Choose a seminar slot</h2>
       <p class="desc" id="seminarCountryLine"></p>
       <div id="seminarDays"></div>
       <button class="primary" id="claimSeminarBtn" disabled>Select a slot first</button>
@@ -250,10 +259,11 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbz3wYaUmVJEoYg0VG9xukkV
 // -------------------------
 
 let data = { booths: [], seminars: [] };
-let selectedBooth = null;
+let selectedBooths = []; // array of booth numbers currently selected (1 normally, up to 2 for Germany)
 let selectedSeminarRow = null;
 let currentCountry = '';
 let currentContact = '';
+let maxBoothsAllowed = 1; // set to 2 when the entered country is Germany (case-insensitive)
 let pendingChange = null; // { oldNumber, country, email } while a "change booth" move is in progress
 
 function isValidEmail(v){
@@ -282,16 +292,17 @@ async function loadState(){
 }
 
 function setStep(n){
-  ['step1','step2','step3'].forEach((id, i) => {
+  // n is 0-indexed to match step0..step3
+  ['step0','step1','step2','step3'].forEach((id, i) => {
     const el = document.getElementById(id);
     el.classList.remove('active','done');
-    if (i + 1 < n) el.classList.add('done');
-    if (i + 1 === n) el.classList.add('active');
+    if (i < n) el.classList.add('done');
+    if (i === n) el.classList.add('active');
   });
 }
 
 function showCard(id){
-  ['boothCard','seminarCard','summaryCard'].forEach(c => {
+  ['detailsCard','boothCard','seminarCard','summaryCard'].forEach(c => {
     document.getElementById(c).style.display = (c === id) ? 'block' : 'none';
   });
 }
@@ -339,7 +350,7 @@ function boothEl(b){
   const isPendingSource = pendingChange && pendingChange.oldNumber === b.Number;
   el.className = 'booth'
     + (taken ? ' taken' : '')
-    + (selectedBooth === b.Number ? ' selected' : '')
+    + (selectedBooths.includes(b.Number) ? ' selected' : '')
     + (isPendingSource ? ' pending-move' : '');
   el.innerHTML = `<div class="booth-no">${String(b.Number).padStart(2,'0')}</div>`;
   if (taken){
@@ -360,9 +371,21 @@ function boothEl(b){
     el.onclick = () => {
       if (pendingChange){
         doChangeBooth(b.Number);
-      } else {
-        selectedBooth = b.Number; renderBooths(); updateBoothBtn();
+        return;
       }
+      const idx = selectedBooths.indexOf(b.Number);
+      if (idx !== -1){
+        selectedBooths.splice(idx, 1);
+      } else if (selectedBooths.length < maxBoothsAllowed){
+        selectedBooths.push(b.Number);
+      } else if (maxBoothsAllowed === 1){
+        selectedBooths = [b.Number];
+      } else {
+        const msg = document.getElementById('boothMsg');
+        msg.className = 'msg err';
+        msg.textContent = `You can select up to ${maxBoothsAllowed} booths. Deselect one first to pick another.`;
+      }
+      renderBooths(); updateBoothBtn();
     };
   }
   return el;
@@ -370,9 +393,12 @@ function boothEl(b){
 
 function updateBoothBtn(){
   const btn = document.getElementById('claimBoothBtn');
-  if (selectedBooth == null){ btn.disabled = true; btn.textContent = 'Select a booth first'; return; }
+  if (selectedBooths.length === 0){ btn.disabled = true; btn.textContent = 'Select a booth first'; return; }
   btn.disabled = false;
-  btn.textContent = `Claim Booth ${String(selectedBooth).padStart(2,'0')}`;
+  const numbers = selectedBooths.map(n => String(n).padStart(2,'0')).join(', ');
+  btn.textContent = selectedBooths.length > 1
+    ? `Claim ${selectedBooths.length} Booths (${numbers})`
+    : `Claim Booth ${numbers}`;
 }
 
 async function releaseBooth(number){
@@ -425,30 +451,58 @@ document.getElementById('cancelChangeBtn').addEventListener('click', () => {
 });
 
 async function claimBooth(){
-  const country = document.getElementById('countryBooth').value.trim();
-  const contact = document.getElementById('contactBooth').value.trim();
   const msg = document.getElementById('boothMsg');
   msg.className = 'msg';
-  if (!country){ msg.className = 'msg err'; msg.textContent = 'Enter a country name first.'; return; }
-  if (!contact){ msg.className = 'msg err'; msg.textContent = 'Enter an email address to register.'; return; }
-  if (!isValidEmail(contact)){ msg.className = 'msg err'; msg.textContent = 'Enter a valid email address.'; return; }
-  if (selectedBooth == null) return;
+  if (selectedBooths.length === 0) return;
 
   const btn = document.getElementById('claimBoothBtn');
   btn.disabled = true; btn.textContent = 'Saving…';
 
-  const result = await apiPost({ action:'claimBooth', number: selectedBooth, country, contact });
-  await loadState();
-
-  if (!result.ok){
-    msg.className = 'msg err'; msg.textContent = result.error;
-    selectedBooth = null; renderBooths(); updateBoothBtn();
-    return;
+  const claimed = [];
+  for (const number of selectedBooths){
+    const result = await apiPost({ action:'claimBooth', number, country: currentCountry, contact: currentContact });
+    if (!result.ok){
+      await loadState();
+      const already = claimed.length
+        ? ` (Booth${claimed.length > 1 ? 's' : ''} ${claimed.map(n => String(n).padStart(2,'0')).join(', ')} confirmed before this happened.)`
+        : '';
+      msg.className = 'msg err'; msg.textContent = result.error + already;
+      selectedBooths = selectedBooths.filter(n => !claimed.includes(n));
+      renderBooths(); updateBoothBtn();
+      return;
+    }
+    claimed.push(number);
   }
 
-  currentCountry = country; currentContact = contact;
-  msg.className = 'msg ok'; msg.textContent = `Booth confirmed for ${country}.`;
+  await loadState();
+  msg.className = 'msg ok';
+  msg.textContent = claimed.length > 1
+    ? `Booths confirmed for ${currentCountry}.`
+    : `Booth confirmed for ${currentCountry}.`;
   goToSeminarStep();
+}
+
+async function continueFromDetails(){
+  const country = document.getElementById('countryDetails').value.trim();
+  const contact = document.getElementById('contactDetails').value.trim();
+  const msg = document.getElementById('detailsMsg');
+  msg.className = 'msg';
+  if (!country){ msg.className = 'msg err'; msg.textContent = 'Enter a country name first.'; return; }
+  if (!contact){ msg.className = 'msg err'; msg.textContent = 'Enter an email address to register.'; return; }
+  if (!isValidEmail(contact)){ msg.className = 'msg err'; msg.textContent = 'Enter a valid email address.'; return; }
+
+  currentCountry = country;
+  currentContact = contact;
+  maxBoothsAllowed = country.toLowerCase() === 'germany' ? 2 : 1;
+  selectedBooths = [];
+
+  const line = document.getElementById('boothCountryLine');
+  line.textContent = maxBoothsAllowed > 1
+    ? `Registering for ${currentCountry} — you may claim up to ${maxBoothsAllowed} booths.`
+    : `Registering for ${currentCountry}.`;
+
+  setStep(1); showCard('boothCard');
+  renderBooths(); updateBoothBtn();
 }
 
 function goToSeminarStep(){
@@ -517,9 +571,9 @@ async function claimSeminar(){
 
 function showSummary(seminar){
   setStep(3); showCard('summaryCard');
-  const b = data.booths.find(x => x.Country === currentCountry && x.Status === 'taken');
-  document.getElementById('summaryBooth').innerHTML = b
-    ? `Booth: <strong>${String(b.Number).padStart(2,'0')}</strong>`
+  const booths = data.booths.filter(x => x.Country === currentCountry && x.Status === 'taken');
+  document.getElementById('summaryBooth').innerHTML = booths.length
+    ? `Booth${booths.length > 1 ? 's' : ''}: <strong>${booths.map(b => String(b.Number).padStart(2,'0')).join(', ')}</strong>`
     : '';
   document.getElementById('summarySeminar').innerHTML = seminar
     ? `Seminar slot: <strong>${escapeHtml(seminar.Day)}, ${escapeHtml(seminar.Time)}</strong>`
@@ -527,15 +581,16 @@ function showSummary(seminar){
 }
 
 function resetFlow(){
-  selectedBooth = null; selectedSeminarRow = null; currentCountry = ''; currentContact = '';
-  document.getElementById('countryBooth').value = '';
-  document.getElementById('contactBooth').value = '';
+  selectedBooths = []; selectedSeminarRow = null; currentCountry = ''; currentContact = ''; maxBoothsAllowed = 1;
+  document.getElementById('countryDetails').value = '';
+  document.getElementById('contactDetails').value = '';
+  document.getElementById('detailsMsg').textContent = '';
   document.getElementById('boothMsg').textContent = '';
   document.getElementById('seminarMsg').textContent = '';
-  setStep(1); showCard('boothCard');
-  renderBooths(); updateBoothBtn();
+  setStep(0); showCard('detailsCard');
 }
 
+document.getElementById('continueDetailsBtn').addEventListener('click', continueFromDetails);
 document.getElementById('claimBoothBtn').addEventListener('click', claimBooth);
 document.getElementById('claimSeminarBtn').addEventListener('click', claimSeminar);
 document.getElementById('skipSeminarBtn').addEventListener('click', () => showSummary(null));
@@ -553,8 +608,7 @@ document.getElementById('registerAnotherBtn').addEventListener('click', resetFlo
     return;
   }
   document.getElementById('loading').style.display = 'none';
-  setStep(1); showCard('boothCard');
-  renderBooths(); updateBoothBtn();
+  setStep(0); showCard('detailsCard');
 
   setInterval(async () => {
     try {

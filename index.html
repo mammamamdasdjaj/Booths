@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Study Fair Booth Reservation</title>
+<title>EU Exhibition Registration</title>
 <style>
   :root{
     --eu-blue:#003399;
@@ -104,20 +104,20 @@
   .booth{
     width:var(--booth-size);height:var(--booth-size);
     border:1.5px solid var(--eu-blue);border-radius:4px;background:#fff;
-    cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;padding:5px 4px;
+    cursor:pointer;display:flex;flex-direction:column;justify-content:flex-start;padding:5px 4px;
     position:relative;transition:all .12s ease;min-width:0;overflow:hidden;
   }
   .booth:hover:not(.taken){background:var(--eu-blue);color:#fff;transform:translateY(-2px);}
   .booth:hover:not(.taken) .booth-hint{color:var(--eu-yellow);}
   .booth-no{font-size:11px;font-weight:700;}
-  .booth-hint{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);}
+  .booth-hint{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin-top:auto;}
   .booth.taken{
-    cursor:default;background:var(--panel);border-color:var(--line);
+    cursor:default;background:var(--panel);border-color:var(--line);padding-bottom:14px;
   }
   .booth.selected{background:var(--eu-yellow);border-color:var(--eu-yellow);color:var(--eu-blue-deep);}
   .booth-country{
     font-size:8px;font-weight:700;color:var(--eu-blue-deep);word-break:break-word;line-height:1.15;
-    text-align:center;
+    text-align:center;margin-top:3px;
   }
   .release{
     position:absolute;bottom:3px;right:4px;font-size:7px;color:var(--ink-soft);background:none;
@@ -217,14 +217,13 @@
   <div class="banner">
     <div class="banner-inner">
       <div class="stars" aria-hidden="true"></div>
-      <p class="eyebrow"></p>
-      <h1>Booth &amp; Seminar Reservation for the International Study Fair 19-20th September in COEX</h1>
+      <p class="eyebrow">EU Delegation · Exhibition</p>
+<h1>Booth &amp; Seminar Reservation for the International Study Fair 19-20th September in COEX</h1>
       <p></p>
       <p class="sub">The reservation is on the first come, first served basis. Please book your country's exhibition booth, then reserve a seminar slot across the two-day programme. 
       <br>
       <p class="sub">  Deadline to fill out this form is <strong>7 August</strong>.</p>
       <p class="sub"> Countries that have not selected a booth by <strong>7 August</strong> will be assigned one automatically.</p>
-
     </div>
   </div>
 
@@ -257,14 +256,14 @@
     <!-- STEP 1: BOOTH -->
     <div id="boothCard" class="card" style="display:none;">
       <div class="step-nav"><button class="back-link" id="backToDetailsBtn">&larr; Back to your details</button></div>
-      <h2>Step 2 · Choose your booth (Please scroll down for the reservation system)</h2>
-      <p class="desc" id="boothCountryLine">22 booths, arranged across the exhibition floor as shown below.</p>
+      <h2>Step 2 · Choose your booth (please scroll down for the booking system)</h2>
       <div class="floor-plan-ref">
         <img src="plan.png" />
-        <div class="caption">Official exhibition floor plan — for reference.</div>
+        <div class="caption">Official exhibition flor plan</div>
       </div>
+       <p class="desc" id="boothCountryLine">22 booths, arranged across the exhibition floor as shown below.</p>
+      <p class="booth-size-note">Each booth measures <strong>3m &times; 2m</strong>.</p>
       <div class="status-line"><span><strong id="availBooths">–</strong> of 22 open</span></div>
-       <p class="booth-size-note">Each booth measures <strong>3m &times; 2m</strong>.</p>
       <div id="changeBanner" class="change-banner" style="display:none;">
         <span id="changeBannerText"></span>
         <button id="cancelChangeBtn">Cancel</button>
@@ -301,7 +300,7 @@
 
 <script>
 // ---- CONFIGURE THIS ----
-const API_URL = 'https://script.google.com/macros/s/AKfycbyl_T15PUhpgL9kie3cwntaEJn93HtyOrm9zdxB2m-TrdjJyh-WUQNm_SPwNLpRQefe/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzEe-zenhrD85SCJqtGBVv5aOO28SLX-dfHwYQHAij7HZIRJ0CryUMfqzN5aXUUpkqg/exec';
 // -------------------------
 
 let data = { booths: [], seminars: [] };
@@ -310,6 +309,14 @@ let selectedSeminarRow = null;
 let currentCountry = '';
 let currentContact = '';
 let maxBoothsAllowed = 1; // set to 2 when the entered country is Germany (case-insensitive)
+
+// Booths are only considered "next to each other" if they form one of the fixed
+// side-by-side pairs in the floor plan (e.g. 11+12, 15+16) — not top/bottom
+// pairs within the same cluster (e.g. 12+14) and not booths from other clusters.
+function isAdjacentBooth(a, b){
+  const lo = Math.min(a, b), hi = Math.max(a, b);
+  return hi - lo === 1 && lo % 2 === 1;
+}
 let lastSeminar = null; // seminar row object shown on the summary, so step-nav can redisplay it
 let summaryReached = false; // whether the summary step has been reached at least once
 let pendingChange = null; // { oldNumber, country, email } while a "change booth" move is in progress
@@ -465,14 +472,22 @@ function boothEl(b){
         return;
       }
       const idx = selectedBooths.indexOf(b.Number);
+      const msg = document.getElementById('boothMsg');
       if (idx !== -1){
         selectedBooths.splice(idx, 1);
+        msg.className = 'msg'; msg.textContent = '';
       } else if (selectedBooths.length < maxBoothsAllowed){
+        if (selectedBooths.length > 0 && !selectedBooths.some(n => isAdjacentBooth(n, b.Number))){
+          msg.className = 'msg err';
+          msg.textContent = 'Please pick two booths that are directly next to each other (e.g. 11 & 12).';
+          renderBooths(); updateBoothBtn();
+          return;
+        }
         selectedBooths.push(b.Number);
+        msg.className = 'msg'; msg.textContent = '';
       } else if (maxBoothsAllowed === 1){
         selectedBooths = [b.Number];
       } else {
-        const msg = document.getElementById('boothMsg');
         msg.className = 'msg err';
         msg.textContent = `You can select up to ${maxBoothsAllowed} booths. Deselect one first to pick another.`;
       }
@@ -570,7 +585,6 @@ async function claimBooth(){
   msg.textContent = claimed.length > 1
     ? `Booths confirmed for ${currentCountry}.`
     : `Booth confirmed for ${currentCountry}.`;
-  sendConfirmationEmail();
   goToSeminarStep();
 }
 
@@ -675,7 +689,11 @@ async function claimSeminar(){
 function showSummary(seminar){
   setStep(3); showCard('summaryCard');
   lastSeminar = seminar;
+  const alreadyReachedSummary = summaryReached;
   summaryReached = true;
+  if (!alreadyReachedSummary){
+    sendConfirmationEmail();
+  }
   const booths = data.booths.filter(x => x.Country === currentCountry && x.Status === 'taken');
   document.getElementById('summaryBooth').innerHTML = booths.length
     ? `Booth${booths.length > 1 ? 's' : ''}: <strong>${booths.map(b => String(b.Number).padStart(2,'0')).join(', ')}</strong>`

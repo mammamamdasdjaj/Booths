@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Booth Reservation</title>
+<title>EU Exhibition Registration</title>
 <style>
   :root{
     --eu-blue:#003399;
@@ -165,16 +165,17 @@
   @media (max-width:700px){.slot-grid{grid-template-columns:repeat(2,1fr);}}
   .slot{
     border:1.5px solid var(--eu-blue);border-radius:4px;padding:9px 8px;cursor:pointer;background:#fff;
-    font-size:12px;transition:all .12s ease;
+    font-size:12px;transition:all .12s ease;position:relative;
   }
   .slot:hover:not(.taken):not(.fixed){background:var(--eu-blue);color:#fff;}
   .slot .time{font-weight:700;display:block;margin-bottom:3px;}
   .slot .topic{font-size:11px;color:var(--ink-soft);display:block;}
   .slot:hover:not(.taken):not(.fixed) .topic{color:#DCE6FF;}
   .slot.fixed{background:var(--panel);border-color:var(--line);cursor:default;color:var(--ink-soft);}
-  .slot.taken{background:var(--panel);border-color:var(--line);cursor:default;}
+  .slot.taken{background:var(--panel);border-color:var(--line);cursor:default;padding-bottom:22px;}
   .slot.selected{background:var(--eu-yellow);border-color:var(--eu-yellow);color:var(--eu-blue-deep);}
   .slot.selected .topic{color:var(--eu-blue-deep);}
+  .slot.pending-move{outline:2px dashed var(--eu-blue);outline-offset:2px;}
 
   label{display:block;font-size:12px;color:var(--ink-soft);margin:12px 0 4px;font-weight:700;}
   label:first-of-type{margin-top:0;}
@@ -217,12 +218,13 @@
   <div class="banner">
     <div class="banner-inner">
       <div class="stars" aria-hidden="true"></div>
-<h1>Booth &amp; Seminar Reservation for the International Study Fair 19-20th September in COEX</h1>
+    <h1>Booth &amp; Seminar Reservation for the International Study Fair 19-20th September in COEX</h1>
       <p></p>
       <p class="sub">The reservation is on the first come, first served basis. Please book your country's exhibition booth, then reserve a seminar slot across the two-day programme. 
       <br>
       <p class="sub">  Deadline to fill out this form is <strong>7 August</strong>.</p>
       <p class="sub"> Countries that have not selected a booth by <strong>7 August</strong> will be assigned one automatically.</p>
+
     </div>
   </div>
 
@@ -255,18 +257,19 @@
     <!-- STEP 1: BOOTH -->
     <div id="boothCard" class="card" style="display:none;">
       <div class="step-nav"><button class="back-link" id="backToDetailsBtn">&larr; Back to your details</button></div>
-      <h2>Step 2 · Choose your booth (please scroll down for the booking system)</h2>
-      <div class="floor-plan-ref">
-        <img src="plan.png" />
-        <div class="caption">Official exhibition flor plan</div>
-      </div>
-       <p class="desc" id="boothCountryLine">22 booths, arranged across the exhibition floor as shown below.</p>
+      <h2>Step 2 · Choose your booth (Please scroll down for the reservation system)</h2>
+      <p class="desc" id="boothCountryLine">22 booths, arranged across the exhibition floor as shown below.</p>
       <p class="booth-size-note">Each booth measures <strong>3m &times; 2m</strong>.</p>
+      <div class="floor-plan-ref">
+        <img src="plan.png />
+        <div class="caption">Official exhibition floor plan</div>
+    </div>
       <div class="status-line"><span><strong id="availBooths">–</strong> of 22 open</span></div>
+       <p class="booth-size-note">Each booth measures <strong>3m &times; 2m</strong>.</p>
       <div id="changeBanner" class="change-banner" style="display:none;">
         <span id="changeBannerText"></span>
         <button id="cancelChangeBtn">Cancel</button>
-      </div>
+    </div>
       <div class="venue" id="venue"></div>
       <button class="primary" id="claimBoothBtn" disabled>Select a booth first</button>
       <div id="boothMsg" class="msg"></div>
@@ -277,6 +280,10 @@
       <div class="step-nav"><button class="back-link" id="backToBoothBtn">&larr; Back to booth selection</button></div>
       <h2>Step 3 · Choose a seminar slot</h2>
       <p class="desc" id="seminarCountryLine"></p>
+      <div id="seminarChangeBanner" class="change-banner" style="display:none;">
+        <span id="seminarChangeBannerText"></span>
+        <button id="cancelSeminarChangeBtn">Cancel</button>
+      </div>
       <div id="seminarDays"></div>
       <label for="seminarTopic">Seminar title / topic (required)</label>
       <input id="seminarTopic" placeholder="e.g. Studying in the EU: an overview" maxlength="120">
@@ -299,7 +306,7 @@
 
 <script>
 // ---- CONFIGURE THIS ----
-const API_URL = 'https://script.google.com/macros/s/AKfycbwWloFtxXiePGMbVp6DxmLXO42xmLHh-Lnb-ex2NTE5nGGdXm_zcOHcfPFKAG0QHjQK/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwml-jL-r8IlgDKyO5Xb6Hr5pDggo08aPOLZPGnAYT7HruaqzfiLtuGB-n71CEqUUDn/exec';
 // -------------------------
 
 let data = { booths: [], seminars: [] };
@@ -319,6 +326,7 @@ function isAdjacentBooth(a, b){
 let lastSeminar = null; // seminar row object shown on the summary, so step-nav can redisplay it
 let summaryReached = false; // whether the summary step has been reached at least once
 let pendingChange = null; // { oldNumber, country, email } while a "change booth" move is in progress
+let pendingSeminarChange = null; // { oldRow, country, email } while a "change seminar slot" move is in progress
 
 function isValidEmail(v){
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
@@ -547,6 +555,7 @@ async function doChangeBooth(newNumber){
   pendingChange = null;
   showChangeBanner();
   renderBooths();
+  sendConfirmationEmail(country, email);
 }
 
 document.getElementById('cancelChangeBtn').addEventListener('click', () => {
@@ -554,6 +563,55 @@ document.getElementById('cancelChangeBtn').addEventListener('click', () => {
   showChangeBanner();
   renderBooths();
 });
+
+function requestChangeSeminar(slot){
+  const email = prompt(`To move ${slot.Country}'s seminar slot, enter the email used at registration:`);
+  if (email === null) return;
+  pendingSeminarChange = { oldRow: slot.Row, country: slot.Country, email };
+  showSeminarChangeBanner();
+  renderSeminars();
+}
+
+function showSeminarChangeBanner(){
+  const banner = document.getElementById('seminarChangeBanner');
+  const text = document.getElementById('seminarChangeBannerText');
+  if (pendingSeminarChange){
+    banner.style.display = 'flex';
+    text.textContent = `Moving ${pendingSeminarChange.country}'s seminar slot — click an open slot below to move it there.`;
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+async function doChangeSeminar(newRow){
+  const { oldRow, country, email } = pendingSeminarChange;
+  const result = await apiPost({ action:'changeSeminar', oldRow, newRow, email });
+  await loadState();
+  if (!result.ok){
+    alert(result.error);
+    pendingSeminarChange = null;
+    showSeminarChangeBanner(); renderSeminars();
+    return;
+  }
+  pendingSeminarChange = null;
+  showSeminarChangeBanner();
+  renderSeminars();
+  sendConfirmationEmail(country, email);
+}
+
+document.getElementById('cancelSeminarChangeBtn').addEventListener('click', () => {
+  pendingSeminarChange = null;
+  showSeminarChangeBanner();
+  renderSeminars();
+});
+
+async function releaseSeminarSlot(slot){
+  const email = prompt(`Release the seminar slot reserved by ${slot.Country} (${slot.Time})?\nEnter the email used at registration to confirm:`);
+  if (email === null) return;
+  const result = await apiPost({ action:'releaseSeminar', row: slot.Row, email });
+  if (!result.ok){ alert(result.error); return; }
+  await loadState(); renderSeminars();
+}
 
 async function claimBooth(){
   const msg = document.getElementById('boothMsg');
@@ -636,13 +694,30 @@ function renderSeminars(){
 function slotEl(s){
   const el = document.createElement('div');
   const state = s.Status; // available | taken | fixed
-  el.className = 'slot ' + state + (selectedSeminarRow === s.Row ? ' selected' : '');
+  const isPendingSource = pendingSeminarChange && pendingSeminarChange.oldRow === s.Row;
+  el.className = 'slot ' + state + (selectedSeminarRow === s.Row ? ' selected' : '') + (isPendingSource ? ' pending-move' : '');
   const topicLine = state === 'available'
     ? 'Open slot'
     : (s.Topic ? `${escapeHtml(s.Topic)} — ${escapeHtml(s.Country)}` : escapeHtml(s.Country));
   el.innerHTML = `<span class="time">${escapeHtml(s.Time)}</span><span class="topic">${topicLine}</span>`;
   if (state === 'available'){
-    el.onclick = () => { selectedSeminarRow = s.Row; renderSeminars(); updateSeminarBtn(); };
+    el.onclick = () => {
+      if (pendingSeminarChange){
+        doChangeSeminar(s.Row);
+        return;
+      }
+      selectedSeminarRow = s.Row; renderSeminars(); updateSeminarBtn();
+    };
+  } else if (state === 'taken' && !pendingSeminarChange){
+    const chg = document.createElement('button');
+    chg.className = 'change-btn'; chg.textContent = 'change';
+    chg.onclick = (e) => { e.stopPropagation(); requestChangeSeminar(s); };
+    el.appendChild(chg);
+
+    const rel = document.createElement('button');
+    rel.className = 'release'; rel.textContent = 'release';
+    rel.onclick = (e) => { e.stopPropagation(); releaseSeminarSlot(s); };
+    el.appendChild(rel);
   }
   return el;
 }
@@ -702,9 +777,9 @@ function showSummary(seminar){
     : 'No seminar slot reserved.';
 }
 
-async function sendConfirmationEmail(){
+async function sendConfirmationEmail(country, contact){
   try {
-    await apiPost({ action:'sendConfirmationEmail', country: currentCountry, contact: currentContact });
+    await apiPost({ action:'sendConfirmationEmail', country: country || currentCountry, contact: contact || currentContact });
   } catch (e) {
     // Non-fatal: the reservation itself already succeeded even if the email fails to send.
   }

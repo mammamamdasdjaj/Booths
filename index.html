@@ -245,8 +245,8 @@
     <!-- STEP 0: DETAILS -->
     <div id="detailsCard" class="card" style="display:none;">
       <h2>Step 1 · Your details</h2>
-      <p class="desc">Enter your country and email to unlock the booth map.</p>
-      <label for="countryDetails">Country</label>
+      <p class="desc">Enter your country/organisation´s name and contact email to proceed with the booking.</p>
+      <label for="countryDetails">Country or Name of the Organisation</label>
       <input id="countryDetails" placeholder="e.g. Belgium" maxlength="60">
       <label for="contactDetails">Email (required)</label>
       <input id="contactDetails" type="email" placeholder="delegation@example.gov" maxlength="80">
@@ -655,7 +655,8 @@ async function continueFromDetails(){
 
   currentCountry = country;
   currentContact = contact;
-  maxBoothsAllowed = country.toLowerCase() === 'germany' ? 2 : 1;
+  const countryLower = country.toLowerCase();
+maxBoothsAllowed = (countryLower === 'germany' || countryLower === 'eu') ? 2 : 1;
   selectedBooths = [];
 
   const line = document.getElementById('boothCountryLine');

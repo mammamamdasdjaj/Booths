@@ -81,31 +81,34 @@
     font-weight:700;letter-spacing:.1em;text-transform:uppercase;text-align:center;padding:8px 0;
   }
   .venue-side.backhall{transform:rotate(180deg);}
-  .venue-floor{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px;padding:16px;align-items:center;}
+  .venue-floor{flex:1;min-width:0;display:flex;flex-direction:column;gap:22px;padding:18px;align-items:center;}
 
-  .row-groups{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;width:100%;}
+  .row-groups{
+    display:flex;justify-content:center;gap:6px;flex-wrap:wrap;width:100%;
+    background:#fff;border:1px solid var(--line);border-radius:6px;padding:14px;
+  }
   .row-group{display:flex;flex-direction:column;align-items:center;gap:6px;}
   .row-group.wide{width:100%;}
   .group-label{
     font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
-    color:var(--eu-blue-deep);background:#fff;border:1px solid var(--line);border-radius:3px;
+    color:var(--eu-blue-deep);background:var(--panel);border:1px solid var(--line);border-radius:3px;
     padding:4px 8px;text-align:center;max-width:calc(var(--booth-size)*2 + 6px);
   }
   .row-group.wide .group-label{max-width:100%;width:100%;}
   .row-booths{display:grid;grid-template-columns:repeat(2,var(--booth-size));gap:6px;}
   .row-group.wide .row-booths{grid-template-columns:repeat(6,var(--booth-size));justify-content:center;}
 
-  .diamond-groups{display:flex;flex-direction:column;align-items:center;gap:8px;width:100%;}
+  .diamond-groups{display:flex;flex-direction:column;align-items:center;gap:16px;width:100%;}
   .diamond-group{
     display:grid;grid-template-columns:repeat(2,var(--booth-size));grid-template-rows:repeat(2,var(--booth-size));
-    gap:6px;position:relative;
+    gap:6px;position:relative;padding:14px;background:#fff;border:1px solid var(--line);border-radius:6px;
   }
-  .diamond-group::before{
-    content:"";position:absolute;pointer-events:none;z-index:0;
-    width:64%;height:64%;top:18%;left:18%;
-    border:1.5px solid var(--line);
-    transform:rotate(45deg);
+  .diamond-group::before,.diamond-group::after{
+    content:"";position:absolute;left:50%;top:50%;width:150%;height:2px;
+    background:var(--eu-blue);opacity:.28;pointer-events:none;z-index:0;
   }
+  .diamond-group::before{transform:translate(-50%,-50%) rotate(45deg);}
+  .diamond-group::after{transform:translate(-50%,-50%) rotate(-45deg);}
   .diamond-group .booth{position:relative;z-index:1;}
 
   .bottom-groups{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;}
@@ -126,21 +129,28 @@
   .booth-no{font-size:11px;font-weight:700;}
   .booth-hint{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin-top:auto;}
   .booth.taken{
-    cursor:default;background:var(--panel);border-color:var(--line);padding-bottom:14px;
+    cursor:default;background:var(--panel);border-color:var(--line);
   }
   .booth.selected{background:var(--eu-yellow);border-color:var(--eu-yellow);color:var(--eu-blue-deep);}
   .booth-country{
     font-size:8px;font-weight:700;color:var(--eu-blue-deep);word-break:break-word;line-height:1.15;
     text-align:center;margin-top:3px;
   }
+  .booth-actions{
+    display:flex;justify-content:center;gap:6px;margin-top:auto;padding-top:3px;
+  }
   .release{
-    position:absolute;bottom:3px;right:4px;font-size:7px;color:var(--ink-soft);background:none;
-    border:none;cursor:pointer;text-decoration:underline;padding:0;
+    font-size:7px;color:var(--ink-soft);background:none;
+    border:none;cursor:pointer;text-decoration:underline;padding:0;white-space:nowrap;
   }
   .change-btn{
-    position:absolute;bottom:3px;left:4px;font-size:7px;color:var(--eu-blue);background:none;
-    border:none;cursor:pointer;text-decoration:underline;padding:0;font-weight:700;
+    font-size:7px;color:var(--eu-blue);background:none;
+    border:none;cursor:pointer;text-decoration:underline;padding:0;font-weight:700;white-space:nowrap;
   }
+  /* Seminar slots (unlike booths) don't use the .booth-actions wrapper, so keep their
+     change/release buttons absolutely positioned in the slot corners as before. */
+  .slot .change-btn{position:absolute;bottom:4px;left:8px;}
+  .slot .release{position:absolute;bottom:4px;right:8px;}
   .booth.pending-move{outline:2px dashed var(--eu-blue);outline-offset:2px;}
   .change-banner{
     background:#EAF0FF;border:1px solid var(--eu-blue);color:var(--eu-blue-deep);font-size:12px;
@@ -482,15 +492,20 @@ function boothEl(b){
   if (taken){
     el.innerHTML += `<div class="booth-country">${escapeHtml(b.Country)}</div>`;
     if (!pendingChange){
+      const actions = document.createElement('div');
+      actions.className = 'booth-actions';
+
       const chg = document.createElement('button');
       chg.className = 'change-btn'; chg.textContent = 'change';
       chg.onclick = (e) => { e.stopPropagation(); requestChange(b); };
-      el.appendChild(chg);
+      actions.appendChild(chg);
 
       const rel = document.createElement('button');
       rel.className = 'release'; rel.textContent = 'release';
       rel.onclick = (e) => { e.stopPropagation(); releaseBooth(b.Number); };
-      el.appendChild(rel);
+      actions.appendChild(rel);
+
+      el.appendChild(actions);
     }
   } else {
     el.innerHTML += `<div class="booth-hint">Open</div>`;

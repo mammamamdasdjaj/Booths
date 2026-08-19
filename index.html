@@ -97,16 +97,11 @@
     font-weight:700;color:var(--eu-blue-deep);font-size:13px;text-align:center;padding:10px;
   }
 
-  /* Right column: three 2x2 booth grids with the EU Pavilion label between the top two */
+  /* Right column: three 2x2 booth blocks*/
   .venue-right-col{display:flex;flex-direction:column;align-items:center;gap:14px;}
   .grid-2x2{
     display:grid;grid-template-columns:repeat(2,var(--booth-size));grid-template-rows:repeat(2,var(--booth-size));
     gap:6px;background:#fff;border:1px solid var(--line);border-radius:6px;padding:12px;
-  }
-  .eu-pavilion-label{
-    background:var(--eu-blue);color:#fff;font-weight:700;font-size:12px;text-transform:uppercase;
-    letter-spacing:.05em;padding:8px 16px;border-radius:4px;text-align:center;
-  }
 
   .booth-size-note{font-size:12px;color:var(--ink-soft);margin:0 0 10px;}
   .floor-plan-ref{margin-bottom:14px;}
@@ -464,10 +459,6 @@ function renderBooths(){
 
   rightCol.appendChild(makeGrid([23, 24, 21, 22]));
 
-  const pavilionLabel = document.createElement('div');
-  pavilionLabel.className = 'eu-pavilion-label';
-  pavilionLabel.textContent = 'EU Pavilion (22)';
-  rightCol.appendChild(pavilionLabel);
 
   rightCol.appendChild(makeGrid([19, 20, 17, 18]));
   rightCol.appendChild(makeGrid([13, 14, 11, 12]));
@@ -494,7 +485,7 @@ function boothEl(b){
     + (taken ? ' taken' : '')
     + (selectedBooths.includes(b.Number) ? ' selected' : '')
     + (isPendingSource ? ' pending-move' : '');
-  el.innerHTML = `<div class="booth-no">s${String(b.Number).padStart(2,'0')}</div>`;
+  el.innerHTML = `<div class="booth-no">Booth${String(b.Number).padStart(2,'0')}</div>`;
   if (taken){
     el.innerHTML += `<div class="booth-country">${escapeHtml(b.Country)}</div>`;
     if (!pendingChange){
@@ -550,7 +541,7 @@ function updateBoothBtn(){
   const btn = document.getElementById('claimBoothBtn');
   if (selectedBooths.length === 0){ btn.disabled = true; btn.textContent = 'Select a booth first'; return; }
   btn.disabled = false;
-  const numbers = selectedBooths.map(n => 's' + String(n).padStart(2,'0')).join(', ');
+  const numbers = selectedBooths.map(n => 'Booth' + String(n).padStart(2,'0')).join(', ');
   btn.textContent = selectedBooths.length > 1
     ? `Claim ${selectedBooths.length} Booths (${numbers})`
     : `Claim Booth ${numbers}`;
@@ -558,7 +549,7 @@ function updateBoothBtn(){
 
 async function releaseBooth(number){
   const booth = data.booths.find(b => b.Number == number);
-  const email = prompt(`Release Booth s${String(number).padStart(2,'0')} (registered to ${booth.Country})?\nEnter the email used at registration to confirm:`);
+  const email = prompt(`Release Booth Booth${String(number).padStart(2,'0')} (registered to ${booth.Country})?\nEnter the email used at registration to confirm:`);
   if (email === null) return;
   const result = await apiPost({ action:'releaseBooth', number, email });
   if (!result.ok){ alert(result.error); return; }
@@ -669,7 +660,7 @@ async function claimBooth(){
     if (!result.ok){
       await loadState();
       const already = claimed.length
-        ? ` (Booth${claimed.length > 1 ? 's' : ''} ${claimed.map(n => 's' + String(n).padStart(2,'0')).join(', ')} confirmed before this happened.)`
+        ? ` (Booth${claimed.length > 1 ? 'Booth' : ''} ${claimed.map(n => 'Booth' + String(n).padStart(2,'0')).join(', ')} confirmed before this happened.)`
         : '';
       msg.className = 'msg err'; msg.textContent = result.error + already;
       selectedBooths = selectedBooths.filter(n => !claimed.includes(n));
@@ -813,7 +804,7 @@ function showSummary(seminar){
   }
   const booths = data.booths.filter(x => x.Country === currentCountry && x.Status === 'taken');
   document.getElementById('summaryBooth').innerHTML = booths.length
-    ? `Booth${booths.length > 1 ? 's' : ''}: <strong>${booths.map(b => 's' + String(b.Number).padStart(2,'0')).join(', ')}</strong>`
+    ? `Booth${booths.length > 1 ? 'Booth' : ''}: <strong>${booths.map(b => 'Booth' + String(b.Number).padStart(2,'0')).join(', ')}</strong>`
     : '';
   document.getElementById('summarySeminar').innerHTML = seminar
     ? `Seminar slot: <strong>${escapeHtml(seminar.Day)}, ${escapeHtml(seminar.Time)}</strong>${seminar.Topic ? `<br>"${escapeHtml(seminar.Topic)}" — ${escapeHtml(seminar.Presenter || '')}` : ''}`

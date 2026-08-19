@@ -70,7 +70,7 @@
   .status-line strong{color:var(--eu-blue-deep);}
 
   .venue{
-    --booth-size:64px;
+    --booth-size:56px;
     background:var(--panel);border:1px solid var(--line);border-radius:6px;
     margin-bottom:6px;overflow:hidden;
   }
@@ -81,7 +81,7 @@
     font-weight:700;letter-spacing:.1em;text-transform:uppercase;text-align:center;padding:8px 0;
   }
   .venue-side.backhall{transform:rotate(180deg);}
-  .venue-floor{flex:1;min-width:0;display:flex;flex-direction:column;gap:16px;padding:16px;align-items:center;}
+  .venue-floor{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px;padding:16px;align-items:center;}
 
   .row-groups{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;width:100%;}
   .row-group{display:flex;flex-direction:column;align-items:center;gap:6px;}
@@ -95,17 +95,16 @@
   .row-booths{display:grid;grid-template-columns:repeat(2,var(--booth-size));gap:6px;}
   .row-group.wide .row-booths{grid-template-columns:repeat(6,var(--booth-size));justify-content:center;}
 
-  .diamond-groups{display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;}
+  .diamond-groups{display:flex;flex-direction:column;align-items:center;gap:8px;width:100%;}
   .diamond-group{
     display:grid;grid-template-columns:repeat(2,var(--booth-size));grid-template-rows:repeat(2,var(--booth-size));
-    gap:6px;position:relative;padding:10px;
+    gap:6px;position:relative;
   }
   .diamond-group::before{
-    content:"";position:absolute;inset:0;pointer-events:none;
-    background:
-      linear-gradient(to bottom right, transparent calc(50% - 1px), var(--line) calc(50% - 1px), var(--line) calc(50% + 1px), transparent calc(50% + 1px)),
-      linear-gradient(to bottom left, transparent calc(50% - 1px), var(--line) calc(50% - 1px), var(--line) calc(50% + 1px), transparent calc(50% + 1px));
-    z-index:0;
+    content:"";position:absolute;pointer-events:none;z-index:0;
+    width:64%;height:64%;top:18%;left:18%;
+    border:1.5px solid var(--line);
+    transform:rotate(45deg);
   }
   .diamond-group .booth{position:relative;z-index:1;}
 
@@ -237,8 +236,8 @@
       <p></p>
       <p class="sub">The reservation is on the first come, first served basis. Please book your country's exhibition booth, then reserve a seminar slot across the two-day programme. 
       <br>
-      <p class="sub">  Deadline to fill out this form is <strong>TBD [FILL OUT!]</strong>.</p>
-      <p class="sub"> Countries that have not selected a booth by <strong>TBD [FILL OUT!]</strong> will be assigned one automatically.</p>
+      <p class="sub">  Deadline to fill out this form is <strong>7 August</strong>.</p>
+      <p class="sub"> Countries that have not selected a booth by <strong>7 August</strong> will be assigned one automatically.</p>
 
     </div>
   </div>

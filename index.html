@@ -92,18 +92,42 @@
 
   /* Middle section: left booth stacks | EU Seminar room | right pavilion column */
   .middle-section{
-    display:flex;gap:16px;align-items:stretch;justify-content:center;width:100%;flex-wrap:wrap;
-  }
-  .left-col{display:flex;flex-direction:column;justify-content:space-between;gap:16px;}
-  .mini-stack{
-    display:flex;flex-direction:column;gap:6px;background:#fff;border:1px solid var(--line);
-    border-radius:6px;padding:8px;
-  }
-  .eu-seminar-block{
-    background:#DCEEDC;border:1.5px solid #6FA875;border-radius:6px;color:#2C5C34;
-    font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;
-    min-width:110px;text-align:center;padding:10px;
-  }
+  display:flex;
+  gap:16px;
+  align-items:stretch;
+  justify-content:center;
+  width:100%;
+  position:relative;
+}
+  .left-col{
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  gap:16px;
+  position:relative;
+  z-index:2;
+}
+  ..eu-seminar-block{
+  position:absolute;
+  z-index:1;
+  left:calc(50% - 145px);
+  top:0;
+  height:100%;
+  width:110px;
+
+  background:#DCEEDC;
+  border:1.5px solid #6FA875;
+  border-radius:6px;
+  color:#2C5C34;
+
+  font-weight:700;
+  font-size:13px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:10px;
+}
   .right-col{display:flex;flex-direction:column;gap:10px;align-items:center;}
   .pavilion-label{
     font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#fff;

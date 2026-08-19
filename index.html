@@ -75,13 +75,12 @@
     background:var(--panel);border:1px solid var(--line);border-radius:6px;
     margin-bottom:6px;overflow:hidden;
   }
-  .venue-inner{display:flex;align-items:stretch;}
+  .venue-inner{display:flex;flex-direction:column;}
   .venue-side{
-    flex:0 0 26px;background:#E7ECF8;color:var(--ink-soft);display:flex;align-items:center;
-    justify-content:center;writing-mode:vertical-rl;text-orientation:mixed;font-size:10px;
-    font-weight:700;letter-spacing:.1em;text-transform:uppercase;text-align:center;padding:8px 0;
+    flex:0 0 auto;background:#E7ECF8;color:var(--ink-soft);display:flex;align-items:center;
+    justify-content:center;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+    text-align:center;padding:6px 0;
   }
-  .venue-side.backhall{transform:rotate(180deg);}
   .venue-floor{
     flex:1;min-width:0;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;
     gap:18px;padding:20px;
@@ -160,7 +159,6 @@
 
   @media (max-width:700px){
     .venue{--booth-size:48px;}
-    .venue-side{flex-basis:20px;font-size:8px;}
     .venue-floor{padding:14px;gap:14px;}
     .seminar-box{min-height:150px;width:130px;top:10px;}
   }
@@ -242,8 +240,8 @@
       <p></p>
       <p class="sub">The reservation is on the first come, first served basis. Please book your country's exhibition booth, then reserve a seminar slot across the two-day programme. 
       <br>
-      <p class="sub">  Deadline to fill out this form is <strong>7 August</strong>.</p>
-      <p class="sub"> Countries that have not selected a booth by <strong>7 August</strong> will be assigned one automatically.</p>
+      <p class="sub">  Deadline to fill out this form is <strong>1 September</strong>.</p>
+      <p class="sub"> Countries that have not selected a booth by <strong>1 September</strong> will be assigned one automatically.</p>
 
     </div>
   </div>
@@ -453,10 +451,10 @@ function renderBooths(){
   const inner = document.createElement('div');
   inner.className = 'venue-inner';
 
-  const entrance = document.createElement('div');
-  entrance.className = 'venue-side entrance';
-  entrance.textContent = 'Entrance';
-  inner.appendChild(entrance);
+  const backhallTop = document.createElement('div');
+  backhallTop.className = 'venue-side backhall';
+  backhallTop.textContent = 'Back of the Exhibition Hall';
+  inner.appendChild(backhallTop);
 
   const floor = document.createElement('div');
   floor.className = 'venue-floor';
@@ -493,10 +491,10 @@ function renderBooths(){
 
   inner.appendChild(floor);
 
-  const backhall = document.createElement('div');
-  backhall.className = 'venue-side backhall';
-  backhall.textContent = 'Back of the Exhibition Hall';
-  inner.appendChild(backhall);
+  const entranceBottom = document.createElement('div');
+  entranceBottom.className = 'venue-side entrance';
+  entranceBottom.textContent = 'Entrance';
+  inner.appendChild(entranceBottom);
 
   venue.appendChild(inner);
 

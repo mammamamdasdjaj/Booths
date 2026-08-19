@@ -84,7 +84,7 @@
   .venue-floor{flex:1;min-width:0;display:flex;flex-direction:column;gap:22px;padding:18px;align-items:center;}
 
   .row-groups{
-    display:flex;justify-content:center;gap:6px;flex-wrap:wrap;width:100%;
+    display:flex;justify-content:center;gap:20px;flex-wrap:wrap;width:100%;
     background:#fff;border:1px solid var(--line);border-radius:6px;padding:14px;
   }
   .row-group{display:flex;flex-direction:column;align-items:center;gap:6px;}
@@ -92,11 +92,10 @@
   .group-label{
     font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
     color:var(--eu-blue-deep);background:var(--panel);border:1px solid var(--line);border-radius:3px;
-    padding:4px 8px;text-align:center;max-width:calc(var(--booth-size)*2 + 6px);
+    padding:4px 8px;text-align:center;max-width:100%;
   }
-  .row-group.wide .group-label{max-width:100%;width:100%;}
-  .row-booths{display:grid;grid-template-columns:repeat(2,var(--booth-size));gap:6px;}
-  .row-group.wide .row-booths{grid-template-columns:repeat(6,var(--booth-size));justify-content:center;}
+  .row-group.wide .group-label{width:100%;}
+  .row-booths{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;}
 
   .diamond-groups{display:flex;flex-direction:column;align-items:center;gap:16px;width:100%;}
   .diamond-group{
@@ -339,12 +338,13 @@ let currentCountry = '';
 let currentContact = '';
 let maxBoothsAllowed = 1; // set to 2 when the entered country is Germany (case-insensitive)
 
-// Booths are only considered "next to each other" if they form one of the fixed
-// side-by-side pairs in the floor plan (e.g. 1+2, 7+8) — not diagonal pairs
-// within the same diamond cluster (e.g. 8+9) and not booths from other clusters.
+// Booths are only considered "next to each other" if they're consecutively
+// numbered AND belong to the same physical cluster (see ALL_CLUSTERS below) —
+// not just any two consecutive numbers across different clusters.
 function isAdjacentBooth(a, b){
   const lo = Math.min(a, b), hi = Math.max(a, b);
-  return hi - lo === 1 && lo % 2 === 1;
+  if (hi - lo !== 1) return false;
+  return ALL_CLUSTERS.some(cluster => cluster.includes(lo) && cluster.includes(hi));
 }
 let lastSeminar = null; // seminar row object shown on the summary, so step-nav can redisplay it
 let summaryReached = false; // whether the summary step has been reached at least once
@@ -392,21 +392,20 @@ function showCard(id){
   });
 }
 
-// Matches the updated floor plan: a 3-section row of paired booths at the top
-// (1-6), three diamond-patterned 4-booth clusters stacked in the middle
-// (7-18), and a 2-section row of paired booths at the bottom (19-22).
-const TOP_ROW = [
-  { label: "EU Seminar Room", booths: [1, 2, 3, 4, 5, 6], wide: true },
-];
+// Matches the real venue: Cluster A (1-2) and Cluster B (3-4) sit nearest the
+// seminar room and share one "EU Seminar Room" label; Clusters C (5-7) and D
+// (8-10) sit next to them; and three diamond-patterned 4-booth clusters
+// (11-22) sit opposite the podium.
+const CLUSTER_A = [1, 2];
+const CLUSTER_B = [3, 4];
+const CLUSTER_C = [5, 6, 7];
+const CLUSTER_D = [8, 9, 10];
 const DIAMOND_CLUSTERS = [
-  [7, 8, 9, 10],
   [11, 12, 13, 14],
   [15, 16, 17, 18],
+  [19, 20, 21, 22],
 ];
-const BOTTOM_ROW = [
-  { booths: [19, 20] },
-  { booths: [21, 22] },
-];
+const ALL_CLUSTERS = [CLUSTER_A, CLUSTER_B, CLUSTER_C, CLUSTER_D, ...DIAMOND_CLUSTERS];
 
 function getBooth(num){
   return data.booths.find(x => x.Number == num) || { Number: num, Status: 'available' };
@@ -427,22 +426,34 @@ function renderBooths(){
   const floor = document.createElement('div');
   floor.className = 'venue-floor';
 
-  // Top row: 3 groups of 2 booths, side by side
-  const topRow = document.createElement('div');
-  topRow.className = 'row-groups';
-  TOP_ROW.forEach(group => {
+  // Near the seminar room: Cluster A + Cluster B under one wide "EU Seminar Room" label
+  const seminarRow = document.createElement('div');
+  seminarRow.className = 'row-groups';
+  const seminarGroupEl = document.createElement('div');
+  seminarGroupEl.className = 'row-group wide';
+  seminarGroupEl.innerHTML = `<div class="group-label">EU Seminar Room</div>`;
+  const seminarBoothsEl = document.createElement('div');
+  seminarBoothsEl.className = 'row-booths';
+  [...CLUSTER_A, ...CLUSTER_B].forEach(num => seminarBoothsEl.appendChild(boothEl(getBooth(num))));
+  seminarGroupEl.appendChild(seminarBoothsEl);
+  seminarRow.appendChild(seminarGroupEl);
+  floor.appendChild(seminarRow);
+
+  // Next to those: Cluster C + Cluster D, unlabeled
+  const cdRow = document.createElement('div');
+  cdRow.className = 'row-groups';
+  [CLUSTER_C, CLUSTER_D].forEach(nums => {
     const groupEl = document.createElement('div');
-    groupEl.className = 'row-group' + (group.wide ? ' wide' : '');
-    if (group.label) groupEl.innerHTML = `<div class="group-label">${escapeHtml(group.label)}</div>`;
+    groupEl.className = 'row-group';
     const boothsEl = document.createElement('div');
     boothsEl.className = 'row-booths';
-    group.booths.forEach(num => boothsEl.appendChild(boothEl(getBooth(num))));
+    nums.forEach(num => boothsEl.appendChild(boothEl(getBooth(num))));
     groupEl.appendChild(boothsEl);
-    topRow.appendChild(groupEl);
+    cdRow.appendChild(groupEl);
   });
-  floor.appendChild(topRow);
+  floor.appendChild(cdRow);
 
-  // Middle: 3 diamond-patterned clusters of 4 booths, stacked vertically
+  // Opposite the podium: 3 diamond-patterned clusters of 4 booths
   const diamonds = document.createElement('div');
   diamonds.className = 'diamond-groups';
   DIAMOND_CLUSTERS.forEach(nums => {
@@ -452,21 +463,6 @@ function renderBooths(){
     diamonds.appendChild(groupEl);
   });
   floor.appendChild(diamonds);
-
-  // Bottom row: 2 groups of 2 booths, side by side
-  const bottomRow = document.createElement('div');
-  bottomRow.className = 'row-groups';
-  BOTTOM_ROW.forEach(group => {
-    const groupEl = document.createElement('div');
-    groupEl.className = 'row-group';
-    if (group.label) groupEl.innerHTML = `<div class="group-label">${escapeHtml(group.label)}</div>`;
-    const boothsEl = document.createElement('div');
-    boothsEl.className = 'row-booths';
-    group.booths.forEach(num => boothsEl.appendChild(boothEl(getBooth(num))));
-    groupEl.appendChild(boothsEl);
-    bottomRow.appendChild(groupEl);
-  });
-  floor.appendChild(bottomRow);
 
   inner.appendChild(floor);
 

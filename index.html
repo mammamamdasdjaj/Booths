@@ -107,26 +107,24 @@
   position:relative;
   z-index:2;
 }
-  .eu-seminar-block{
-  position:absolute;
-  z-index:1;
-  left:calc(50% - 145px);
-  top:0;
-  height:100%;
-  width:110px;
-
-  background:#DCEEDC;
-  border:1.5px solid #6FA875;
-  border-radius:6px;
-  color:#2C5C34;
-
-  font-weight:700;
-  font-size:13px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  text-align:center;
-  padding:10px;
+  .eu-seminar-block {
+  position: absolute;
+  z-index: -1; /* Puts the banner behind the booth squares */
+  top: -15px;
+  bottom: -15px;
+  left: -20px;
+  right: -20px;
+  background: #DCEEDC;
+  border: 1.5px solid #6FA875;
+  border-radius: 6px;
+  color: #2C5C34;
+  font-weight: 700;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 10px;
 }
   .right-col{display:flex;flex-direction:column;gap:10px;align-items:center;}
   .pavilion-label{
@@ -490,7 +488,7 @@ function renderBooths(){
   const seminarRoom = document.createElement('div');
   seminarRoom.className = 'eu-seminar-block';
   seminarRoom.textContent = 'EU Seminar';
-  middle.appendChild(seminarRoom);
+  leftCol.appendChild(seminarRoom);
 
   const rightCol = document.createElement('div');
   rightCol.className = 'right-col';

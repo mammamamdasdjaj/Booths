@@ -81,37 +81,33 @@
     font-weight:700;letter-spacing:.1em;text-transform:uppercase;text-align:center;padding:8px 0;
   }
   .venue-side.backhall{transform:rotate(180deg);}
-  .venue-floor{flex:1;min-width:0;display:flex;flex-direction:column;gap:22px;padding:18px;align-items:center;}
-
-  .row-groups{
-    display:flex;justify-content:center;gap:20px;flex-wrap:wrap;width:100%;
-    background:#fff;border:1px solid var(--line);border-radius:6px;padding:14px;
+  .venue-floor{
+    flex:1;min-width:0;display:flex;flex-direction:row;gap:26px;padding:18px;
+    align-items:flex-start;justify-content:center;flex-wrap:wrap;
   }
-  .row-group{display:flex;flex-direction:column;align-items:center;gap:6px;}
-  .row-group.wide{width:100%;}
-  .group-label{
-    font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
-    color:var(--eu-blue-deep);background:var(--panel);border:1px solid var(--line);border-radius:3px;
-    padding:4px 8px;text-align:center;max-width:100%;
-  }
-  .row-group.wide .group-label{width:100%;}
-  .row-booths{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;}
 
-  .diamond-groups{display:flex;flex-direction:column;align-items:center;gap:16px;width:100%;}
-  .diamond-group{
+  /* Left column: s08-s10 row, s07/s06 stack, EU Seminar box, s05/s04 stack, s03-s01 row */
+  .venue-left-col{display:flex;flex-direction:column;align-items:flex-start;gap:10px;}
+  .row-booths{display:flex;flex-wrap:wrap;gap:6px;background:#fff;border:1px solid var(--line);border-radius:6px;padding:10px;}
+  .left-stack-row{display:flex;}
+  .booth-stack{display:flex;flex-direction:column;gap:6px;background:#fff;border:1px solid var(--line);border-radius:6px;padding:10px;}
+  .eu-seminar-box{
+    background:#DCEEDC;border:1px solid var(--line);border-radius:6px;
+    min-height:120px;width:180px;display:flex;align-items:center;justify-content:center;
+    font-weight:700;color:var(--eu-blue-deep);font-size:13px;text-align:center;padding:10px;
+  }
+
+  /* Right column: three 2x2 booth grids with the EU Pavilion label between the top two */
+  .venue-right-col{display:flex;flex-direction:column;align-items:center;gap:14px;}
+  .grid-2x2{
     display:grid;grid-template-columns:repeat(2,var(--booth-size));grid-template-rows:repeat(2,var(--booth-size));
-    gap:6px;position:relative;padding:14px;background:#fff;border:1px solid var(--line);border-radius:6px;
+    gap:6px;background:#fff;border:1px solid var(--line);border-radius:6px;padding:12px;
   }
-  .diamond-group::before,.diamond-group::after{
-    content:"";position:absolute;left:50%;top:50%;width:150%;height:2px;
-    background:var(--eu-blue);opacity:.28;pointer-events:none;z-index:0;
+  .eu-pavilion-label{
+    background:var(--eu-blue);color:#fff;font-weight:700;font-size:12px;text-transform:uppercase;
+    letter-spacing:.05em;padding:8px 16px;border-radius:4px;text-align:center;
   }
-  .diamond-group::before{transform:translate(-50%,-50%) rotate(45deg);}
-  .diamond-group::after{transform:translate(-50%,-50%) rotate(-45deg);}
-  .diamond-group .booth{position:relative;z-index:1;}
 
-  .bottom-groups{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;}
-  .bottom-group{display:grid;grid-template-columns:repeat(2,var(--booth-size));grid-template-rows:repeat(2,var(--booth-size));gap:6px;}
   .booth-size-note{font-size:12px;color:var(--ink-soft);margin:0 0 10px;}
   .floor-plan-ref{margin-bottom:14px;}
   .floor-plan-ref img{width:100%;display:block;border:1px solid var(--line);border-radius:6px;}
@@ -164,9 +160,8 @@
   @media (max-width:700px){
     .venue{--booth-size:54px;}
     .venue-side{flex-basis:20px;font-size:8px;}
-    .venue-floor{padding:12px;gap:12px;}
-    .row-groups,.bottom-groups{justify-content:center;}
-    .group-label{font-size:8.5px;}
+    .venue-floor{padding:12px;gap:16px;flex-direction:column;align-items:center;}
+    .venue-left-col{align-items:center;}
   }
   @media (max-width:420px){
     .venue{--booth-size:44px;}
@@ -392,20 +387,19 @@ function showCard(id){
   });
 }
 
-// Matches the real venue: Cluster A (1-2) and Cluster B (3-4) sit nearest the
-// seminar room and share one "EU Seminar Room" label; Clusters C (5-7) and D
-// (8-10) sit next to them; and three diamond-patterned 4-booth clusters
-// (11-22) sit opposite the podium.
-const CLUSTER_A = [1, 2];
-const CLUSTER_B = [3, 4];
-const CLUSTER_C = [5, 6, 7];
-const CLUSTER_D = [8, 9, 10];
-const DIAMOND_CLUSTERS = [
-  [11, 12, 13, 14],
-  [15, 16, 17, 18],
-  [19, 20, 21, 22],
-];
-const ALL_CLUSTERS = [CLUSTER_A, CLUSTER_B, CLUSTER_C, CLUSTER_D, ...DIAMOND_CLUSTERS];
+// Matches the real venue floor plan:
+//  Left column (top to bottom): a 3-booth row (08-10), a 2-booth stack (07/06),
+//  the EU Seminar Room, a 2-booth stack (05/04), and a 3-booth row (03-01).
+//  Right column: three 2x2 blocks of booths (11-14, 17-20, 21-24) under the
+//  "EU Pavilion" label. Booth numbers 15 and 16 are not used on the plan.
+const CLUSTER_TOP = [8, 9, 10];       // top row, left to right
+const CLUSTER_UPPER_STACK = [6, 7];   // s07 sits above s06
+const CLUSTER_LOWER_STACK = [4, 5];   // s05 sits above s04
+const CLUSTER_BOTTOM = [1, 2, 3];     // bottom row, displayed s03, s02, s01
+const GRID_TOP = [21, 22, 23, 24];    // top-right 2x2 block: s23 s24 / s21 s22
+const GRID_MID = [17, 18, 19, 20];    // middle-right 2x2 block: s19 s20 / s17 s18
+const GRID_BOTTOM = [11, 12, 13, 14]; // bottom-right 2x2 block: s13 s14 / s11 s12
+const ALL_CLUSTERS = [CLUSTER_TOP, CLUSTER_UPPER_STACK, CLUSTER_LOWER_STACK, CLUSTER_BOTTOM, GRID_TOP, GRID_MID, GRID_BOTTOM];
 
 function getBooth(num){
   return data.booths.find(x => x.Number == num) || { Number: num, Status: 'available' };
@@ -426,43 +420,59 @@ function renderBooths(){
   const floor = document.createElement('div');
   floor.className = 'venue-floor';
 
-  // Near the seminar room: Cluster A + Cluster B under one wide "EU Seminar Room" label
-  const seminarRow = document.createElement('div');
-  seminarRow.className = 'row-groups';
-  const seminarGroupEl = document.createElement('div');
-  seminarGroupEl.className = 'row-group wide';
-  seminarGroupEl.innerHTML = `<div class="group-label">EU Seminar Room</div>`;
-  const seminarBoothsEl = document.createElement('div');
-  seminarBoothsEl.className = 'row-booths';
-  [...CLUSTER_A, ...CLUSTER_B].forEach(num => seminarBoothsEl.appendChild(boothEl(getBooth(num))));
-  seminarGroupEl.appendChild(seminarBoothsEl);
-  seminarRow.appendChild(seminarGroupEl);
-  floor.appendChild(seminarRow);
+  // LEFT COLUMN: s08-s10 row, s07/s06 stack, EU Seminar box, s05/s04 stack, s03-s01 row
+  const leftCol = document.createElement('div');
+  leftCol.className = 'venue-left-col';
 
-  // Next to those: Cluster C + Cluster D, unlabeled
-  const cdRow = document.createElement('div');
-  cdRow.className = 'row-groups';
-  [CLUSTER_C, CLUSTER_D].forEach(nums => {
-    const groupEl = document.createElement('div');
-    groupEl.className = 'row-group';
-    const boothsEl = document.createElement('div');
-    boothsEl.className = 'row-booths';
-    nums.forEach(num => boothsEl.appendChild(boothEl(getBooth(num))));
-    groupEl.appendChild(boothsEl);
-    cdRow.appendChild(groupEl);
-  });
-  floor.appendChild(cdRow);
+  const topRow = document.createElement('div');
+  topRow.className = 'row-booths';
+  CLUSTER_TOP.forEach(num => topRow.appendChild(boothEl(getBooth(num))));
+  leftCol.appendChild(topRow);
 
-  // Opposite the podium: 3 diamond-patterned clusters of 4 booths
-  const diamonds = document.createElement('div');
-  diamonds.className = 'diamond-groups';
-  DIAMOND_CLUSTERS.forEach(nums => {
-    const groupEl = document.createElement('div');
-    groupEl.className = 'diamond-group';
-    nums.forEach(num => groupEl.appendChild(boothEl(getBooth(num))));
-    diamonds.appendChild(groupEl);
-  });
-  floor.appendChild(diamonds);
+  const upperStack = document.createElement('div');
+  upperStack.className = 'booth-stack';
+  [...CLUSTER_UPPER_STACK].reverse().forEach(num => upperStack.appendChild(boothEl(getBooth(num)))); // s07 above s06
+  leftCol.appendChild(upperStack);
+
+  const seminarBox = document.createElement('div');
+  seminarBox.className = 'eu-seminar-box';
+  seminarBox.textContent = 'EU Seminar Room';
+  leftCol.appendChild(seminarBox);
+
+  const lowerStack = document.createElement('div');
+  lowerStack.className = 'booth-stack';
+  [...CLUSTER_LOWER_STACK].reverse().forEach(num => lowerStack.appendChild(boothEl(getBooth(num)))); // s05 above s04
+  leftCol.appendChild(lowerStack);
+
+  const bottomRow = document.createElement('div');
+  bottomRow.className = 'row-booths';
+  [...CLUSTER_BOTTOM].reverse().forEach(num => bottomRow.appendChild(boothEl(getBooth(num)))); // s03, s02, s01
+  leftCol.appendChild(bottomRow);
+
+  floor.appendChild(leftCol);
+
+  // RIGHT COLUMN: three 2x2 booth blocks with the "EU Pavilion" label between the top two
+  const rightCol = document.createElement('div');
+  rightCol.className = 'venue-right-col';
+
+  function makeGrid(nums){
+    const grid = document.createElement('div');
+    grid.className = 'grid-2x2';
+    nums.forEach(num => grid.appendChild(boothEl(getBooth(num))));
+    return grid;
+  }
+
+  rightCol.appendChild(makeGrid([23, 24, 21, 22]));
+
+  const pavilionLabel = document.createElement('div');
+  pavilionLabel.className = 'eu-pavilion-label';
+  pavilionLabel.textContent = 'EU Pavilion (22)';
+  rightCol.appendChild(pavilionLabel);
+
+  rightCol.appendChild(makeGrid([19, 20, 17, 18]));
+  rightCol.appendChild(makeGrid([13, 14, 11, 12]));
+
+  floor.appendChild(rightCol);
 
   inner.appendChild(floor);
 
@@ -484,7 +494,7 @@ function boothEl(b){
     + (taken ? ' taken' : '')
     + (selectedBooths.includes(b.Number) ? ' selected' : '')
     + (isPendingSource ? ' pending-move' : '');
-  el.innerHTML = `<div class="booth-no">${String(b.Number).padStart(2,'0')}</div>`;
+  el.innerHTML = `<div class="booth-no">s${String(b.Number).padStart(2,'0')}</div>`;
   if (taken){
     el.innerHTML += `<div class="booth-country">${escapeHtml(b.Country)}</div>`;
     if (!pendingChange){
@@ -518,7 +528,7 @@ function boothEl(b){
       } else if (selectedBooths.length < maxBoothsAllowed){
         if (selectedBooths.length > 0 && !selectedBooths.some(n => isAdjacentBooth(n, b.Number))){
           msg.className = 'msg err';
-          msg.textContent = 'Please pick two booths that are directly next to each other (e.g. 1 & 2).';
+          msg.textContent = 'Please pick two booths that are directly next to each other (e.g. s01 & s02).';
           renderBooths(); updateBoothBtn();
           return;
         }
@@ -540,7 +550,7 @@ function updateBoothBtn(){
   const btn = document.getElementById('claimBoothBtn');
   if (selectedBooths.length === 0){ btn.disabled = true; btn.textContent = 'Select a booth first'; return; }
   btn.disabled = false;
-  const numbers = selectedBooths.map(n => String(n).padStart(2,'0')).join(', ');
+  const numbers = selectedBooths.map(n => 's' + String(n).padStart(2,'0')).join(', ');
   btn.textContent = selectedBooths.length > 1
     ? `Claim ${selectedBooths.length} Booths (${numbers})`
     : `Claim Booth ${numbers}`;
@@ -548,7 +558,7 @@ function updateBoothBtn(){
 
 async function releaseBooth(number){
   const booth = data.booths.find(b => b.Number == number);
-  const email = prompt(`Release Booth ${String(number).padStart(2,'0')} (registered to ${booth.Country})?\nEnter the email used at registration to confirm:`);
+  const email = prompt(`Release Booth s${String(number).padStart(2,'0')} (registered to ${booth.Country})?\nEnter the email used at registration to confirm:`);
   if (email === null) return;
   const result = await apiPost({ action:'releaseBooth', number, email });
   if (!result.ok){ alert(result.error); return; }
@@ -659,7 +669,7 @@ async function claimBooth(){
     if (!result.ok){
       await loadState();
       const already = claimed.length
-        ? ` (Booth${claimed.length > 1 ? 's' : ''} ${claimed.map(n => String(n).padStart(2,'0')).join(', ')} confirmed before this happened.)`
+        ? ` (Booth${claimed.length > 1 ? 's' : ''} ${claimed.map(n => 's' + String(n).padStart(2,'0')).join(', ')} confirmed before this happened.)`
         : '';
       msg.className = 'msg err'; msg.textContent = result.error + already;
       selectedBooths = selectedBooths.filter(n => !claimed.includes(n));
@@ -803,7 +813,7 @@ function showSummary(seminar){
   }
   const booths = data.booths.filter(x => x.Country === currentCountry && x.Status === 'taken');
   document.getElementById('summaryBooth').innerHTML = booths.length
-    ? `Booth${booths.length > 1 ? 's' : ''}: <strong>${booths.map(b => String(b.Number).padStart(2,'0')).join(', ')}</strong>`
+    ? `Booth${booths.length > 1 ? 's' : ''}: <strong>${booths.map(b => 's' + String(b.Number).padStart(2,'0')).join(', ')}</strong>`
     : '';
   document.getElementById('summarySeminar').innerHTML = seminar
     ? `Seminar slot: <strong>${escapeHtml(seminar.Day)}, ${escapeHtml(seminar.Time)}</strong>${seminar.Topic ? `<br>"${escapeHtml(seminar.Topic)}" — ${escapeHtml(seminar.Presenter || '')}` : ''}`

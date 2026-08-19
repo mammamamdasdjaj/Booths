@@ -295,6 +295,7 @@
 
       <div class="venue" id="venue"></div>
       <button class="primary" id="claimBoothBtn" disabled>Select a booth first</button>
+      <button class="secondary" id="skipBoothBtn">Skip booth selection for now</button>
       <div id="boothMsg" class="msg"></div>
     </div>
 
@@ -349,6 +350,7 @@ function isAdjacentBooth(a, b){
 }
 let lastSeminar = null; // seminar row object shown on the summary, so step-nav can redisplay it
 let summaryReached = false; // whether the summary step has been reached at least once
+let boothStepDone = false; // whether the booth step was completed — claimed a booth, or explicitly skipped
 let pendingChange = null; // { oldNumber, country, email } while a "change booth" move is in progress
 let pendingSeminarChange = null; // { oldRow, country, email } while a "change seminar slot" move is in progress
 
@@ -393,17 +395,16 @@ function showCard(id){
   });
 }
 
-// Matches the reference floor plan's real booth numbers (01-14, then 17-24 —
-// 15 and 16 aren't used). Booth 8 sits directly above 7, which sits directly
+// Booth numbers run sequentially 1-22, no gaps. Booth 8 sits directly above 7, which sits directly
 // above 6, with 9 and 10 continuing right of 8 — one continuous L. Booths
 // 5/4/3 mirror this at the bottom, with 2 and 1 continuing right of 3. The EU
 // Seminar Room sits to the left of both L's, and the three unlabelled 2x2
 // booth grids sit on the right.
 const CLUSTER_TOP          = [8, 9, 10];       // top arm of the top L
 const CLUSTER_LEFT_UPPER   = [7, 6];           // vertical arm of the top L
-const CLUSTER_RIGHT_TOP    = [23, 24, 21, 22]; // right column, top 2x2 grid
-const CLUSTER_RIGHT_MID    = [19, 20, 17, 18]; // right column, middle 2x2 grid
-const CLUSTER_RIGHT_BOTTOM = [13, 14, 11, 12]; // right column, bottom 2x2 grid
+const CLUSTER_RIGHT_TOP    = [19, 21, 20, 22]; // right column, top 2x2 grid
+const CLUSTER_RIGHT_MID    = [15, 17, 16, 18]; // right column, middle 2x2 grid
+const CLUSTER_RIGHT_BOTTOM = [11, 13, 12, 14]; // right column, bottom 2x2 grid
 const CLUSTER_LEFT_LOWER   = [5, 4];           // vertical arm of the bottom L
 const CLUSTER_BOTTOM       = [3, 2, 1];        // bottom arm of the bottom L
 const ALL_CLUSTERS = [
@@ -694,8 +695,14 @@ async function claimBooth(){
   msg.textContent = claimed.length > 1
     ? `Booths confirmed for ${currentCountry}.`
     : `Booth confirmed for ${currentCountry}.`;
+  boothStepDone = true;
   goToSeminarStep();
 }
+
+document.getElementById('skipBoothBtn').addEventListener('click', () => {
+  boothStepDone = true;
+  goToSeminarStep();
+});
 
 async function continueFromDetails(){
   const country = document.getElementById('countryDetails').value.trim();
@@ -711,6 +718,7 @@ async function continueFromDetails(){
   const countryLower = country.toLowerCase();
 maxBoothsAllowed = (countryLower === 'germany' || countryLower === 'eu') ? 2 : 1;
   selectedBooths = [];
+  boothStepDone = false;
 
   const line = document.getElementById('boothCountryLine');
   line.textContent = maxBoothsAllowed > 1
@@ -840,7 +848,7 @@ async function sendConfirmationEmail(country, contact){
 
 function resetFlow(){
   selectedBooths = []; selectedSeminarRow = null; currentCountry = ''; currentContact = ''; maxBoothsAllowed = 1;
-  lastSeminar = null; summaryReached = false;
+  lastSeminar = null; summaryReached = false; boothStepDone = false;
   document.getElementById('countryDetails').value = '';
   document.getElementById('contactDetails').value = '';
   document.getElementById('seminarTopic').value = '';
@@ -868,7 +876,7 @@ function goToStep(n){
     return;
   }
   if (n === 2){
-    if (!hasBoothForCurrentCountry()){ alert('Please confirm a booth first.'); return; }
+    if (!boothStepDone && !hasBoothForCurrentCountry()){ alert('Please confirm a booth first, or skip booth selection.'); return; }
     goToSeminarStep();
     return;
   }
